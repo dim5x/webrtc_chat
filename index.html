@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebRTC Discord-like Chat</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Channels Sidebar -->
+    <div class="channels-sidebar">
+        <div class="server-header">
+            <span>🎵 Voice Chat</span>
+        </div>
+
+        <!-- Блок подключения -->
+        <div class="technical-section">
+            <div class="section-title">CONNECT TO ROOM</div>
+            <input type="text" class="room-input" id="roomId" placeholder="Enter Room ID or leave empty" value="100">
+            <div class="controls-group">
+                <button class="control-button join-button" id="joinRoom">Join Room</button>
+                <button class="control-button leave-button" id="leaveRoom" disabled>Leave Room</button>
+            </div>
+        </div>
+
+        <!-- Блок управления звуком -->
+<!--        <div class="technical-section">-->
+<!--            <div class="section-title">AUDIO CONTROLS</div>-->
+<!--            <div class="controls-group">-->
+<!--                <button class="control-button action-button" id="mute" disabled>Mute</button>-->
+<!--                <button class="control-button action-button" id="deafen" disabled>Deafen</button>-->
+<!--            </div>-->
+<!--        </div>-->
+
+        <!-- Визуализатор -->
+<!--        <div class="visualizer-container">-->
+<!--            <div class="section-title">VOICE ACTIVITY</div>-->
+<!--            <div id="audio-visualizer"></div>-->
+<!--            <div style="color: #72767d; font-size: 12px; margin-top: 8px;">-->
+<!--                Status: <span id="status">Disconnected</span>-->
+<!--            </div>-->
+<!--        </div>-->
+
+        <!-- Аудио выходы -->
+        <div class="technical-section">
+            <div class="section-title">AUDIO OUTPUT</div>
+            <div class="audio-output-container" id="audioOutputContainer">
+                <div style="color: #72767d; font-size: 12px; text-align: center; padding: 10px;">
+                    No active audio streams
+                </div>
+            </div>
+        </div>
+
+        <!-- Компактный блок пользователя -->
+        <div class="user-controls-section">
+            <div class="user-info-compact">
+                <div class="user-avatar">U</div>
+                <div class="user-details">
+                    <div class="user-id" id="myId"></div>
+                    <div class="user-status" id="statusCompact">Disconnected</div>
+                </div>
+            </div>
+
+            <div class="audio-controls-compact">
+    <button class="icon-button" id="muteIcon" disabled title="Mute">
+        <i class="fas fa-microphone"></i>
+    </button>
+    <button class="icon-button" id="deafenIcon" disabled title="Deafen">
+        <i class="fas fa-headphones"></i>
+    </button>
+</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <div class="channel-name">💬 Text Chat</div>
+            <div style="color: #72767d; font-size: 14px;">Room: <span id="currentRoom">Not connected</span></div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" id="chatMessages">
+            <div class="message other-message">
+                <div class="message-header">
+                    <div class="message-avatar">S</div>
+                    <div class="message-sender">System</div>
+                    <div class="message-time">Just now</div>
+                </div>
+                <div class="message-content">
+                    Welcome to voice chat! Join a room to start talking.
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-container">
+            <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." disabled>
+            <button class="send-button" id="sendMessage" disabled>Send</button>
+        </div>
+    </div>
+
+    <!-- Right Sidebar - Participants -->
+    <div class="room-info">
+        <div class="room-title">PARTICIPANTS — <span id="participantCount">0</span>/3</div>
+
+        <div class="participants-list" id="peerList">
+            <div class="participant">
+                <div class="participant-avatar">Y</div>
+                <div>
+                    <div style="font-size: 12px; color: #fff;">You</div>
+                    <div class="status-online">● Online</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/client.js"></script>
+</body>
+</html>
