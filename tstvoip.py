@@ -226,7 +226,7 @@ async def main():
     await runner.setup()
 
     # site = web.TCPSite(runner, 'localhost', 8080)
-    site = web.TCPSite(runner, '0.0.0.0', 80)  # Для доступа извне
+    site = web.TCPSite(runner, '0.0.0.0', 8080)  # Для доступа извне
     await site.start()
     print("Server started at http://localhost:8080")
     print("Make sure you have index.html and static/client.js files in the same directory")
