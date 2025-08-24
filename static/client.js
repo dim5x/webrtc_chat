@@ -239,9 +239,13 @@ class GroupVoiceChat {
             console.log('Creating new WebSocket connection to ws://localhost:8080/ws');
 
             try {
-                this.ws = new WebSocket('ws://localhost:8080/ws');
-                console.log('WebSocket object created');
+                // this.ws = new WebSocket('ws://localhost:8080/ws');
+                // console.log('WebSocket object created');
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
+                this.ws = new WebSocket(wsUrl);
 
+                console.log('Connecting to:', wsUrl);
                 // Таймаут для подключения
                 const connectionTimeout = setTimeout(() => {
                     console.error('WebSocket connection timeout');
@@ -389,56 +393,56 @@ class GroupVoiceChat {
     }
 
     handleRoomJoined(data) {
-    this.roomId = data.room_id;
-    this.isConnecting = false;
+        this.roomId = data.room_id;
+        this.isConnecting = false;
 
-    // Безопасное получение элементов
-    const leaveButton = document.getElementById('leaveRoom');
-    const muteButton = document.getElementById('muteIcon');
-    const deafenButton = document.getElementById('deafenIcon');
-    const messageInput = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendMessage');
-    const joinButton = document.getElementById('joinRoom');
-    const roomIdInput = document.getElementById('roomId');
-    const statusElement = document.getElementById('status');
-    const statusCompactElement = document.getElementById('statusCompact');
-    const currentRoomElement = document.getElementById('currentRoom');
-    const participantCountElement = document.getElementById('participantCount');
+        // Безопасное получение элементов
+        const leaveButton = document.getElementById('leaveRoom');
+        const muteButton = document.getElementById('muteIcon');
+        const deafenButton = document.getElementById('deafenIcon');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendMessage');
+        const joinButton = document.getElementById('joinRoom');
+        const roomIdInput = document.getElementById('roomId');
+        const statusElement = document.getElementById('status');
+        const statusCompactElement = document.getElementById('statusCompact');
+        const currentRoomElement = document.getElementById('currentRoom');
+        const participantCountElement = document.getElementById('participantCount');
 
-    // Обновляем информацию о комнате
-    if (currentRoomElement) currentRoomElement.textContent = this.roomId;
+        // Обновляем информацию о комнате
+        if (currentRoomElement) currentRoomElement.textContent = this.roomId;
 
-    // Активируем элементы управления
-    if (leaveButton) leaveButton.disabled = false;
-    if (muteButton) muteButton.disabled = false;
-    if (deafenButton) deafenButton.disabled = false;
-    if (messageInput) messageInput.disabled = false;
-    if (sendButton) sendButton.disabled = false;
+        // Активируем элементы управления
+        if (leaveButton) leaveButton.disabled = false;
+        if (muteButton) muteButton.disabled = false;
+        if (deafenButton) deafenButton.disabled = false;
+        if (messageInput) messageInput.disabled = false;
+        if (sendButton) sendButton.disabled = false;
 
-    // Деактивируем кнопку Join
-    if (joinButton) joinButton.disabled = true;
-    if (roomIdInput) roomIdInput.disabled = true;
+        // Деактивируем кнопку Join
+        if (joinButton) joinButton.disabled = true;
+        if (roomIdInput) roomIdInput.disabled = true;
 
-    // Обновляем статус
-    if (statusElement) statusElement.textContent = 'Connected to room ' + this.roomId;
-    if (statusCompactElement) {
-        statusCompactElement.textContent = 'Connected';
-        statusCompactElement.classList.add('connected');
+        // Обновляем статус
+        if (statusElement) statusElement.textContent = 'Connected to room ' + this.roomId;
+        if (statusCompactElement) {
+            statusCompactElement.textContent = 'Connected';
+            statusCompactElement.classList.add('connected');
+        }
+
+        // Обновляем список участников с сервера (включая себя)
+        const allPeers = [this.peerId, ...data.peers];
+        this.updatePeerList(allPeers);
+
+        // Подключаемся к существующим пирам
+        setTimeout(() => {
+            data.peers.forEach(peerId => {
+                this.connectToPeer(peerId);
+            });
+        }, 1000);
+
+        console.log(`Joined room: ${this.roomId} with peers:`, data.peers);
     }
-
-    // Обновляем список участников с сервера (включая себя)
-    const allPeers = [this.peerId, ...data.peers];
-    this.updatePeerList(allPeers);
-
-    // Подключаемся к существующим пирам
-    setTimeout(() => {
-        data.peers.forEach(peerId => {
-            this.connectToPeer(peerId);
-        });
-    }, 1000);
-
-    console.log(`Joined room: ${this.roomId} with peers:`, data.peers);
-}
 
     async connectToPeer(peerId) {
         if (this.peerConnections[peerId]) return;
@@ -501,12 +505,26 @@ class GroupVoiceChat {
         const pc = new RTCPeerConnection(configuration);
 
         pc.onicecandidate = (event) => {
-            if (event.candidate && this.ws && this.ws.readyState === WebSocket.OPEN) {
-                this.ws.send(JSON.stringify({
-                    type: 'ice-candidate',
-                    candidate: event.candidate,
-                    target_peer: peerId
-                }));
+            if (event.candidate) {
+                // Логируем в консоль
+                console.log(`❄️ [${peerId}] ICE candidate:`, {
+                    type: event.candidate.type,
+                    protocol: event.candidate.protocol,
+                    address: event.candidate.address,
+                    port: event.candidate.port,
+                    candidateType: event.candidate.candidateType
+                });
+
+                // Отправляем через WebSocket
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({
+                        type: 'ice-candidate',
+                        candidate: event.candidate,
+                        target_peer: peerId
+                    }));
+                }
+            } else {
+                console.log(`✅ [${peerId}] ICE gathering complete`);
             }
         };
 
@@ -515,11 +533,97 @@ class GroupVoiceChat {
             this.updateAudioElements();
         };
 
-        pc.oniceconnectionstatechange = () => {
-            console.log(`ICE connection state with ${peerId}: ${pc.iceConnectionState}`);
+        // 🔽 ПРОСТОЙ МОНИТОРИНГ В КОНСОЛЬ 🔽
+        pc.onconnectionstatechange = () => {
+            console.log(`🔗 [${peerId}] Connection state: ${pc.connectionState}`);
+
+            if (pc.connectionState === 'connected') {
+                // Просто логируем когда соединение установлено
+                console.log(`✅ [${peerId}] Connection established!`);
+                this.logConnectionDetails(pc, peerId);
+            }
         };
 
+        pc.oniceconnectionstatechange = () => {
+            console.log(`🌐 [${peerId}] ICE state: ${pc.iceConnectionState}`);
+        };
+
+        pc.onicegatheringstatechange = () => {
+            console.log(`📡 [${peerId}] ICE gathering: ${pc.iceGatheringState}`);
+        };
+
+        pc.onsignalingstatechange = () => {
+            console.log(`📶 [${peerId}] Signaling: ${pc.signalingState}`);
+        };
+        // 🔼 КОНЕЦ МОНИТОРИНГА 🔼
+
         return pc;
+    }
+
+    async logConnectionDetails(pc, peerId) {
+        try {
+            console.group(`📊 Connection details for ${peerId}`);
+
+            console.log('🔄 Connection state:', pc.connectionState);
+            console.log('🌐 ICE state:', pc.iceConnectionState);
+
+            const stats = await pc.getStats();
+            let activeLocalCandidate = null;
+            let activeRemoteCandidate = null;
+
+            stats.forEach(report => {
+                // 🔽 ДОБАВЛЯЕМ ПОИСК АКТИВНОЙ ПАРЫ 🔽
+                if (report.type === 'candidate-pair' && report.nominated && report.state === 'succeeded') {
+                    console.log('⭐ ACTIVE Candidate Pair:', {
+                        state: report.state,
+                        bytesSent: report.bytesSent,
+                        bytesReceived: report.bytesReceived,
+                        priority: report.priority
+                    });
+
+                    // Находим конкретные кандидаты этой пары
+                    activeLocalCandidate = stats.get(report.localCandidateId);
+                    activeRemoteCandidate = stats.get(report.remoteCandidateId);
+                }
+            });
+
+            // 🔽 ВЫВОДИМ ВЫБРАННЫЕ КАНДИДАТЫ 🔽
+            if (activeLocalCandidate && activeRemoteCandidate) {
+                console.log('🎯 SELECTED Local Candidate:', {
+                    type: activeLocalCandidate.candidateType,
+                    ip: activeLocalCandidate.ip,
+                    port: activeLocalCandidate.port,
+                    protocol: activeLocalCandidate.protocol
+                });
+
+                console.log('🎯 SELECTED Remote Candidate:', {
+                    type: activeRemoteCandidate.candidateType,
+                    ip: activeRemoteCandidate.ip,
+                    port: activeRemoteCandidate.port,
+                    protocol: activeRemoteCandidate.protocol
+                });
+
+                console.log('🔗 Connection Type:', this.getConnectionType(activeLocalCandidate, activeRemoteCandidate));
+            } else {
+                console.log('⏳ Active candidate pair not found yet');
+            }
+
+            console.groupEnd();
+
+        } catch (error) {
+            console.error('Error getting connection details:', error);
+        }
+    }
+
+// 🔽 ДОБАВЛЯЕМ ВСПОМОГАТЕЛЬНЫЙ МЕТОД 🔽
+    getConnectionType(localCandidate, remoteCandidate) {
+        if (localCandidate.candidateType === 'relay' || remoteCandidate.candidateType === 'relay') {
+            return 'TURN (Relay)';
+        } else if (localCandidate.candidateType === 'srflx' || remoteCandidate.candidateType === 'srflx') {
+            return 'STUN (NAT Traversal)';
+        } else {
+            return 'P2P (Local Network)';
+        }
     }
 
     updateAudioElements() {
@@ -602,20 +706,20 @@ class GroupVoiceChat {
 
     // Перепишем метод updatePeerList полностью
     updatePeerList(peers = null) {
-    const peerList = document.getElementById('peerList');
-    if (!peerList) return;
+        const peerList = document.getElementById('peerList');
+        if (!peerList) return;
 
-    // Если peers не передан, используем текущие подключения
-    const currentPeers = peers || Object.keys(this.peerConnections);
+        // Если peers не передан, используем текущие подключения
+        const currentPeers = peers || Object.keys(this.peerConnections);
 
-    peerList.innerHTML = '';
+        peerList.innerHTML = '';
 
-    // Добавляем только если мы в комнате
-    if (this.roomId) {
-        // Добавляем текущего пользователя
-        const selfDiv = document.createElement('div');
-        selfDiv.className = 'participant';
-        selfDiv.innerHTML = `
+        // Добавляем только если мы в комнате
+        if (this.roomId) {
+            // Добавляем текущего пользователя
+            const selfDiv = document.createElement('div');
+            selfDiv.className = 'participant';
+            selfDiv.innerHTML = `
             <div class="participant-avatar">Y</div>
             <div class="participant-info">
                 <div class="participant-name">You (${this.peerId.substr(0, 6)})</div>
@@ -625,16 +729,16 @@ class GroupVoiceChat {
                 <input type="range" min="0" max="100" value="100" class="volume-slider">
             </div>
         `;
-        peerList.appendChild(selfDiv);
+            peerList.appendChild(selfDiv);
 
-        // Добавляем других участников из списка сервера
-        currentPeers.forEach(peerId => {
-            if (peerId !== this.peerId) {
-                const participantDiv = document.createElement('div');
-                participantDiv.className = 'participant';
-                participantDiv.dataset.peerId = peerId;
+            // Добавляем других участников из списка сервера
+            currentPeers.forEach(peerId => {
+                if (peerId !== this.peerId) {
+                    const participantDiv = document.createElement('div');
+                    participantDiv.className = 'participant';
+                    participantDiv.dataset.peerId = peerId;
 
-                participantDiv.innerHTML = `
+                    participantDiv.innerHTML = `
                     <div class="participant-avatar">${peerId.substr(0, 1).toUpperCase()}</div>
                     <div class="participant-info">
                         <div class="participant-name">User ${peerId.substr(0, 6)}</div>
@@ -645,21 +749,21 @@ class GroupVoiceChat {
                                class="volume-slider" data-peer-id="${peerId}">
                     </div>
                 `;
-                peerList.appendChild(participantDiv);
+                    peerList.appendChild(participantDiv);
+                }
+            });
+
+            // Обновляем счетчик
+            const participantCountElement = document.getElementById('participantCount');
+            if (participantCountElement) {
+                participantCountElement.textContent = currentPeers.length;
             }
-        });
 
-        // Обновляем счетчик
-        const participantCountElement = document.getElementById('participantCount');
-        if (participantCountElement) {
-            participantCountElement.textContent = currentPeers.length;
-        }
-
-        // Настраиваем регуляторы громкости
-        this.setupVolumeControls();
-    } else {
-        // Показываем пустой список если не в комнате
-        peerList.innerHTML = `
+            // Настраиваем регуляторы громкости
+            this.setupVolumeControls();
+        } else {
+            // Показываем пустой список если не в комнате
+            peerList.innerHTML = `
             <div class="participant">
                 <div class="participant-avatar">Y</div>
                 <div class="participant-info">
@@ -668,9 +772,9 @@ class GroupVoiceChat {
                 </div>
             </div>
         `;
-        document.getElementById('participantCount').textContent = '0';
+            document.getElementById('participantCount').textContent = '0';
+        }
     }
-}
 
     setupVolumeControls() {
         const sliders = document.querySelectorAll('.volume-slider');
@@ -751,53 +855,53 @@ class GroupVoiceChat {
 
 
     leaveRoom() {
-    console.log('Leaving room...');
+        console.log('Leaving room...');
 
-    // Безопасное получение элементов
-    const joinButton = document.getElementById('joinRoom');
-    const leaveButton = document.getElementById('leaveRoom');
-    const muteButton = document.getElementById('muteIcon');
-    const deafenButton = document.getElementById('deafenIcon');
-    const messageInput = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendMessage');
-    const roomIdInput = document.getElementById('roomId');
-    const statusElement = document.getElementById('status');
-    const statusCompactElement = document.getElementById('statusCompact');
-    const currentRoomElement = document.getElementById('currentRoom');
-    const participantCountElement = document.getElementById('participantCount');
-    const chatMessagesElement = document.getElementById('chatMessages');
-    const peerListElement = document.getElementById('peerList');
-    const audioContainer = document.getElementById('audioOutputContainer');
+        // Безопасное получение элементов
+        const joinButton = document.getElementById('joinRoom');
+        const leaveButton = document.getElementById('leaveRoom');
+        const muteButton = document.getElementById('muteIcon');
+        const deafenButton = document.getElementById('deafenIcon');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendMessage');
+        const roomIdInput = document.getElementById('roomId');
+        const statusElement = document.getElementById('status');
+        const statusCompactElement = document.getElementById('statusCompact');
+        const currentRoomElement = document.getElementById('currentRoom');
+        const participantCountElement = document.getElementById('participantCount');
+        const chatMessagesElement = document.getElementById('chatMessages');
+        const peerListElement = document.getElementById('peerList');
+        const audioContainer = document.getElementById('audioOutputContainer');
 
-    // Удаляем визуализатор
-    // this.removeAudioVisualizer();
+        // Удаляем визуализатор
+        // this.removeAudioVisualizer();
 
-    // Сбрасываем элементы управления
-    if (joinButton) joinButton.disabled = false;
-    if (leaveButton) leaveButton.disabled = true;
-    if (muteButton) muteButton.disabled = true;
-    if (deafenButton) deafenButton.disabled = true;
-    if (messageInput) messageInput.disabled = true;
-    if (sendButton) sendButton.disabled = true;
-    if (roomIdInput) roomIdInput.disabled = false;
+        // Сбрасываем элементы управления
+        if (joinButton) joinButton.disabled = false;
+        if (leaveButton) leaveButton.disabled = true;
+        if (muteButton) muteButton.disabled = true;
+        if (deafenButton) deafenButton.disabled = true;
+        if (messageInput) messageInput.disabled = true;
+        if (sendButton) sendButton.disabled = true;
+        if (roomIdInput) roomIdInput.disabled = false;
 
-    // Очищаем поле roomId
-    if (roomIdInput) roomIdInput.value = '';
+        // Очищаем поле roomId
+        if (roomIdInput) roomIdInput.value = '';
 
-    // Сбрасываем статус
-    if (statusElement) statusElement.textContent = 'Disconnected';
-    if (statusCompactElement) {
-        statusCompactElement.textContent = 'Disconnected';
-        statusCompactElement.classList.remove('connected');
-    }
-    if (currentRoomElement) currentRoomElement.textContent = 'Not connected';
+        // Сбрасываем статус
+        if (statusElement) statusElement.textContent = 'Disconnected';
+        if (statusCompactElement) {
+            statusCompactElement.textContent = 'Disconnected';
+            statusCompactElement.classList.remove('connected');
+        }
+        if (currentRoomElement) currentRoomElement.textContent = 'Not connected';
 
-    // Очищаем список участников
-    this.updatePeerList([]);
+        // Очищаем список участников
+        this.updatePeerList([]);
 
-    // Очищаем чат (оставляем только системное сообщение)
-    if (chatMessagesElement) {
-        chatMessagesElement.innerHTML = `
+        // Очищаем чат (оставляем только системное сообщение)
+        if (chatMessagesElement) {
+            chatMessagesElement.innerHTML = `
             <div class="message other-message">
                 <div class="message-header">
                     <div class="message-avatar">S</div>
@@ -809,47 +913,47 @@ class GroupVoiceChat {
                 </div>
             </div>
         `;
-    }
+        }
 
-    // Очищаем аудио выходы
-    if (audioContainer) {
-        audioContainer.innerHTML = `
+        // Очищаем аудио выходы
+        if (audioContainer) {
+            audioContainer.innerHTML = `
             <div style="color: #72767d; font-size: 12px; text-align: center; padding: 10px;">
                 No active audio streams
             </div>
         `;
+        }
+
+        // Закрываем соединения
+        Object.values(this.peerConnections).forEach(pc => {
+            if (pc) pc.close();
+        });
+        this.peerConnections = {};
+        this.remoteStreams = {};
+
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+
+        // Отправляем сообщение о выходе из комнаты на сервер
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'leave',
+                room_id: this.roomId
+            }));
+        }
+
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+
+        this.roomId = null;
+        this.isConnecting = false;
+
+        console.log('Left room successfully');
     }
-
-    // Закрываем соединения
-    Object.values(this.peerConnections).forEach(pc => {
-        if (pc) pc.close();
-    });
-    this.peerConnections = {};
-    this.remoteStreams = {};
-
-    if (this.localStream) {
-        this.localStream.getTracks().forEach(track => track.stop());
-        this.localStream = null;
-    }
-
-    // Отправляем сообщение о выходе из комнаты на сервер
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({
-            type: 'leave',
-            room_id: this.roomId
-        }));
-    }
-
-    if (this.ws) {
-        this.ws.close();
-        this.ws = null;
-    }
-
-    this.roomId = null;
-    this.isConnecting = false;
-
-    console.log('Left room successfully');
-}
 
     toggleMute() {
         if (this.localStream) {
