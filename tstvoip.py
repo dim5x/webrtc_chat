@@ -394,7 +394,7 @@ async def main():
     app.router.add_get('/', index_handler)
     app.router.add_get('/ws', server.websocket_handler)
     app.router.add_get('/static/{filename}', js_handler)
-    app.router.add_get('/static/style.css', css_handler)
+    app.router.add_get('/static/{filename}', css_handler)
     app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
 
     runner = web.AppRunner(app)
