@@ -2,18 +2,14 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Копируем requirements первым для кэширования
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# Копируем все файлы
+# Копируем ВСЕ файлы проекта
 COPY . .
 
-# Создаем директорию static и копируем туда файлы
-RUN mkdir -p static && \
-    cp /static/client.js static/ && \
-    cp /static/style.css static/ && \
-    echo "Static files:" && ls -la static/
+# Проверяем что файлы на месте
+RUN echo "Files in container:" && ls -la
 
 EXPOSE 8080
 
