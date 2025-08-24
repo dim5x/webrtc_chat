@@ -11,8 +11,8 @@ COPY . .
 
 # Создаем директорию static и копируем туда файлы
 RUN mkdir -p static && \
-    cp static/client.js static/ && \
-    cp static/style.css static/ && \
+    cp /static/client.js static/ && \
+    cp /static/style.css static/ && \
     echo "Static files:" && ls -la static/
 
 EXPOSE 8080
