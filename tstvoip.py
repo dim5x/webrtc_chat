@@ -328,7 +328,8 @@ async def js_handler(request):
 
 async def css_handler(request):
     try:
-        with open('static/style.css', 'r', encoding='utf-8') as f:
+        filename = request.match_info.get('filename', '')
+        with open(f'static/{filename}', 'r', encoding='utf-8') as f:
             content = f.read()
         return web.Response(text=content, content_type='text/css')
     except FileNotFoundError:
