@@ -291,17 +291,41 @@ async def index_handler(request):
 
 
 # Обработчик для JavaScript файлов
+# async def js_handler(request):
+#     try:
+#         filename = request.match_info.get('filename', '')
+#         with open(f'static/{filename}', 'r', encoding='utf-8') as f:
+#             content = f.read()
+#         return web.Response(text=content, content_type='application/javascript')
+#     except FileNotFoundError:
+#         return web.Response(text='// File not found', content_type='application/javascript')
+
 async def js_handler(request):
     try:
         filename = request.match_info.get('filename', '')
+        # Безопасная проверка пути
+        if '..' in filename or '/' in filename or not filename.endswith('.js'):
+            return web.Response(status=403, text="Forbidden")
+
         with open(f'static/{filename}', 'r', encoding='utf-8') as f:
             content = f.read()
         return web.Response(text=content, content_type='application/javascript')
     except FileNotFoundError:
         return web.Response(text='// File not found', content_type='application/javascript')
+    except Exception as e:
+        print(f"Error serving JS: {e}")
+        return web.Response(text='// Server error', content_type='application/javascript')
 
 
 # Добавьте обработчик для CSS файлов
+# async def css_handler(request):
+#     try:
+#         with open('static/style.css', 'r', encoding='utf-8') as f:
+#             content = f.read()
+#         return web.Response(text=content, content_type='text/css')
+#     except FileNotFoundError:
+#         return web.Response(text='/* CSS file not found */', content_type='text/css')
+
 async def css_handler(request):
     try:
         with open('static/style.css', 'r', encoding='utf-8') as f:
@@ -309,6 +333,9 @@ async def css_handler(request):
         return web.Response(text=content, content_type='text/css')
     except FileNotFoundError:
         return web.Response(text='/* CSS file not found */', content_type='text/css')
+    except Exception as e:
+        print(f"Error serving CSS: {e}")
+        return web.Response(text='/* Server error */', content_type='text/css')
 
 
 # async def main():
@@ -381,6 +408,7 @@ async def main():
     print(f"WebSocket available at: ws://localhost:{port}/ws")
 
     await asyncio.Future()
+
 
 if __name__ == '__main__':
     asyncio.run(main())
