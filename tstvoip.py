@@ -27,45 +27,145 @@ class WebRTCServer:
                             'timestamp': data.get('timestamp')
                         })
 
+    # async def websocket_handler(self, request):
+    #     ws = web.WebSocketResponse()
+    #     await ws.prepare(request)
+    #
+    #     peer_id = None
+    #     room_id = '100'
+    #
+    #     try:
+    #         async for msg in ws:
+    #             if msg.type == WSMsgType.TEXT:
+    #                 data = json.loads(msg.data)
+    #
+    #                 if data['type'] == 'join':
+    #                     peer_id = data['peer_id']
+    #                     room_id = data.get('room_id')
+    #
+    #                     if not room_id:
+    #                         room_id = str(uuid.uuid4())[:8]
+    #
+    #                     await self.handle_join(peer_id, room_id, ws, data)
+    #
+    #                 elif data['type'] == 'offer':
+    #                     await self.handle_offer(peer_id, data)
+    #
+    #                 elif data['type'] == 'answer':
+    #                     await self.handle_answer(peer_id, data)
+    #
+    #                 elif data['type'] == 'ice-candidate':
+    #                     await self.handle_ice_candidate(peer_id, data)
+    #
+    #                 elif data['type'] == 'text_message':
+    #                     await self.handle_text_message(peer_id, data)
+    #
+    #                 elif data['type'] == 'leave':
+    #                     await self.handle_disconnect(peer_id, room_id)
+    #
+    #     except Exception as e:
+    #         print(f"WebSocket error: {e}")
+    #     finally:
+    #         await self.handle_disconnect(peer_id, room_id)
+    #
+    #     return ws
     async def websocket_handler(self, request):
+        # Обработка CORS preflight запросов
+        if request.method == 'OPTIONS':
+            return web.Response(
+                status=200,
+                headers={
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                    'Access-Control-Max-Age': '86400'
+                }
+            )
+
+        # Проверяем upgrade header для WebSocket
+        if 'upgrade' not in request.headers.get('connection', '').lower():
+            return web.Response(status=400, text="WebSocket upgrade required")
+
+        if request.headers.get('upgrade', '').lower() != 'websocket':
+            return web.Response(status=400, text="WebSocket upgrade required")
+
+        # Создаем WebSocket response с CORS headers
         ws = web.WebSocketResponse()
-        await ws.prepare(request)
+        ws.headers.update({
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Credentials': 'true'
+        })
+
+        try:
+            await ws.prepare(request)
+        except Exception as e:
+            print(f"WebSocket preparation failed: {e}")
+            return web.Response(status=500, text="WebSocket handshake failed")
 
         peer_id = None
         room_id = '100'
 
         try:
+            # Логируем новое подключение
+            print(f"New WebSocket connection from {request.remote}")
+
             async for msg in ws:
                 if msg.type == WSMsgType.TEXT:
-                    data = json.loads(msg.data)
+                    try:
+                        data = json.loads(msg.data)
+                        print(f"Received message: {data}")
 
-                    if data['type'] == 'join':
-                        peer_id = data['peer_id']
-                        room_id = data.get('room_id')
+                        if data['type'] == 'join':
+                            peer_id = data['peer_id']
+                            room_id = data.get('room_id', '100')
 
-                        if not room_id:
-                            room_id = str(uuid.uuid4())[:8]
+                            if not room_id:
+                                room_id = str(uuid.uuid4())[:8]
 
-                        await self.handle_join(peer_id, room_id, ws, data)
+                            await self.handle_join(peer_id, room_id, ws, data)
 
-                    elif data['type'] == 'offer':
-                        await self.handle_offer(peer_id, data)
+                        elif data['type'] == 'offer':
+                            await self.handle_offer(peer_id, data)
 
-                    elif data['type'] == 'answer':
-                        await self.handle_answer(peer_id, data)
+                        elif data['type'] == 'answer':
+                            await self.handle_answer(peer_id, data)
 
-                    elif data['type'] == 'ice-candidate':
-                        await self.handle_ice_candidate(peer_id, data)
+                        elif data['type'] == 'ice-candidate':
+                            await self.handle_ice_candidate(peer_id, data)
 
-                    elif data['type'] == 'text_message':
-                        await self.handle_text_message(peer_id, data)
+                        elif data['type'] == 'text_message':
+                            await self.handle_text_message(peer_id, data)
 
-                    elif data['type'] == 'leave':
-                        await self.handle_disconnect(peer_id, room_id)
+                        elif data['type'] == 'leave':
+                            await self.handle_disconnect(peer_id, room_id)
+
+                        else:
+                            print(f"Unknown message type: {data['type']}")
+                            await ws.send_json({
+                                'type': 'error',
+                                'message': f'Unknown message type: {data["type"]}'
+                            })
+
+                    except json.JSONDecodeError as e:
+                        print(f"JSON decode error: {e}")
+                        await ws.send_json({
+                            'type': 'error',
+                            'message': 'Invalid JSON format'
+                        })
+                    except KeyError as e:
+                        print(f"Missing key in data: {e}")
+                        await ws.send_json({
+                            'type': 'error',
+                            'message': f'Missing required field: {e}'
+                        })
+
+                elif msg.type == WSMsgType.ERROR:
+                    print(f"WebSocket error: {ws.exception()}")
 
         except Exception as e:
             print(f"WebSocket error: {e}")
         finally:
+            print(f"WebSocket connection closed for peer {peer_id}")
             await self.handle_disconnect(peer_id, room_id)
 
         return ws
@@ -211,28 +311,76 @@ async def css_handler(request):
         return web.Response(text='/* CSS file not found */', content_type='text/css')
 
 
+# async def main():
+#     server = WebRTCServer()
+#
+#     app = web.Application()
+#
+#     # Добавляем маршруты
+#     app.router.add_get('/', index_handler)
+#     app.router.add_get('/ws', server.websocket_handler)
+#     app.router.add_get('/static/{filename}', js_handler)
+#     app.router.add_get('/static/style.css', css_handler)
+#     # Запускаем сервер
+#     runner = web.AppRunner(app)
+#     await runner.setup()
+#
+#     # site = web.TCPSite(runner, 'localhost', 8080)
+#     site = web.TCPSite(runner, '0.0.0.0', 8080)  # Для доступа извне
+#     await site.start()
+#     print("Server started at http://localhost:8080")
+#     print("Make sure you have index.html and static/client.js files in the same directory")
+#
+#     await asyncio.Future()
+
 async def main():
     server = WebRTCServer()
-
     app = web.Application()
+
+    # Добавляем CORS middleware
+    async def cors_middleware(app, handler):
+        async def middleware_handler(request):
+            # Preflight requests
+            if request.method == 'OPTIONS':
+                return web.Response(
+                    status=200,
+                    headers={
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type',
+                        'Access-Control-Max-Age': '86400'
+                    }
+                )
+
+            response = await handler(request)
+            response.headers.update({
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+            })
+            return response
+
+        return middleware_handler
+
+    app.middlewares.append(cors_middleware)
 
     # Добавляем маршруты
     app.router.add_get('/', index_handler)
     app.router.add_get('/ws', server.websocket_handler)
     app.router.add_get('/static/{filename}', js_handler)
     app.router.add_get('/static/style.css', css_handler)
-    # Запускаем сервер
+    app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
+
     runner = web.AppRunner(app)
     await runner.setup()
 
-    # site = web.TCPSite(runner, 'localhost', 8080)
-    site = web.TCPSite(runner, '0.0.0.0', 8080)  # Для доступа извне
+    port = int(os.environ.get('PORT', 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
-    print("Server started at http://localhost:8080")
-    print("Make sure you have index.html and static/client.js files in the same directory")
+
+    print(f"Server started on port {port}")
+    print(f"WebSocket available at: ws://localhost:{port}/ws")
 
     await asyncio.Future()
-
 
 if __name__ == '__main__':
     asyncio.run(main())
