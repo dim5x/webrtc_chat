@@ -302,12 +302,13 @@ async def index_handler(request):
 
 async def js_handler(request):
     try:
-        filename = request.match_info.get('filename', '')
+        # filename = request.match_info.get('filename', '')
         # Безопасная проверка пути
-        if '..' in filename or '/' in filename or not filename.endswith('.js'):
-            return web.Response(status=403, text="Forbidden")
+        # if '..' in filename or '/' in filename or not filename.endswith('.js'):
+        #     return web.Response(status=403, text="Forbidden")
 
-        with open(f'static/{filename}', 'r', encoding='utf-8') as f:
+        # with open(f'static/{filename}', 'r', encoding='utf-8') as f:
+        with open(f'static/client.js', 'r', encoding='utf-8') as f:
             content = f.read()
         return web.Response(text=content, content_type='application/javascript')
     except FileNotFoundError:
