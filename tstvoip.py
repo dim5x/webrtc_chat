@@ -349,7 +349,7 @@ async def js_handler(request):
 async def css_handler(request):
     try:
         # filename = request.match_info.get('filename', '')
-        with open(f'static/css/style.css', 'r', encoding='utf-8') as f:
+        with open(f'static/style.css', 'r', encoding='utf-8') as f:
             content = f.read()
         return web.Response(text=content, content_type='text/css')
         # with open(f'static/css/all.min.css', 'r', encoding='utf-8') as f:
@@ -418,7 +418,7 @@ async def main():
     app.router.add_get('/', index_handler)
     app.router.add_get('/ws', server.websocket_handler)
     app.router.add_get('/static/client.js', js_handler)
-    app.router.add_get('/static/css/style.css', css_handler)
+    app.router.add_get('/static/style.css', css_handler)
     app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
 
     runner = web.AppRunner(app)
