@@ -139,6 +139,8 @@ class WebRTCServer:
                         elif data['type'] == 'leave':
                             await self.handle_disconnect(peer_id, room_id)
 
+                        elif data['type'] == 'file_message':
+                            await self.handle_file_message(peer_id, data)
                         else:
                             print(f"Unknown message type: {data['type']}")
                             await ws.send_json({
@@ -170,11 +172,28 @@ class WebRTCServer:
 
         return ws
 
+    async def handle_file_message(self, peer_id, data):
+        room_id = self.peer_rooms.get(peer_id)
+        if not room_id or room_id not in self.rooms:
+            return
+
+        # Отправляем файл всем в комнате
+        for member_id in self.rooms[room_id]:
+            if member_id in self.connections:
+                await self.connections[member_id].send_json({
+                    'type': 'file_message',
+                    'file_name': data['file_name'],
+                    'file_type': data['file_type'],
+                    'file_size': data['file_size'],
+                    'file_data': data['file_data'],
+                    'from_peer': peer_id,
+                    'timestamp': data.get('timestamp', '')
+                })
     async def handle_join(self, peer_id, room_id, ws, data):
-        if room_id in self.rooms and len(self.rooms[room_id]) >= 3:
+        if room_id in self.rooms and len(self.rooms[room_id]) >= 6:
             await ws.send_json({
                 'type': 'error',
-                'message': 'Room is full (max 3 users)'
+                'message': 'Room is full (max 6 users)'
             })
             return
 
@@ -330,9 +349,12 @@ async def js_handler(request):
 async def css_handler(request):
     try:
         # filename = request.match_info.get('filename', '')
-        with open(f'static/style.css', 'r', encoding='utf-8') as f:
+        with open(f'static/css/style.css', 'r', encoding='utf-8') as f:
             content = f.read()
         return web.Response(text=content, content_type='text/css')
+        # with open(f'static/css/all.min.css', 'r', encoding='utf-8') as f:
+        #     content = f.read()
+        # return web.Response(text=content, content_type='text/css')
     except FileNotFoundError:
         return web.Response(text='/* CSS file not found */', content_type='text/css')
     except Exception as e:
@@ -396,7 +418,7 @@ async def main():
     app.router.add_get('/', index_handler)
     app.router.add_get('/ws', server.websocket_handler)
     app.router.add_get('/static/client.js', js_handler)
-    app.router.add_get('/static/style.css', css_handler)
+    app.router.add_get('/static/css/style.css', css_handler)
     app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
 
     runner = web.AppRunner(app)
