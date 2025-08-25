@@ -322,6 +322,7 @@ body {
     margin: 10px 0;
     max-height: 120px;
     overflow-y: auto;
+    display: none;
 }
 
 .remote-audio {

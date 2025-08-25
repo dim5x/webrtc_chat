@@ -182,7 +182,7 @@ class GroupVoiceChat {
         // Уведомления для чужих сообщений
         if (!isOwn && document.hidden) {
             if ('Notification' in window && Notification.permission === 'granted') {
-                const dataURL="data:image/png;base64,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";
+                const dataURL = "data:image/png;base64,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";
                 new Notification('Сообщение', {
                     body: `От: ${peerId} \n${message}`,
                     // icon: '/favicon.svg'
@@ -412,6 +412,9 @@ class GroupVoiceChat {
                 console.log('Received message:', {from: data.from_peer, own: this.peerId, isOwn: isOwnMessage});
                 this.addMessageToChat(data.from_peer, data.message, isOwnMessage);
                 break;
+            case 'file_message':
+                await this.handleFileMessage(data);
+                break;
             case 'error':
                 alert(data.message);
                 this.isConnecting = false;
@@ -475,7 +478,7 @@ class GroupVoiceChat {
                 this.connectToPeer(peerId);
             });
         }, 1000);
-
+        this.updateAudioElements(); //*****************************************************
         console.log(`Joined room: ${this.roomId} with peers:`, data.peers);
     }
 
@@ -530,12 +533,32 @@ class GroupVoiceChat {
 
     createPeerConnection(peerId) {
         const configuration = {
-            iceServers: [
-                {urls: 'stun:stun.l.google.com:19302'},
-                {urls: 'stun:stun1.l.google.com:19302'},
-                {urls: 'stun:stun2.l.google.com:19302'}
-            ]
-        };
+                iceServers: [
+                    {urls: 'stun:stun.l.google.com:19302'},
+                    {urls: 'stun:stun1.l.google.com:19302'},
+                    {urls: 'stun:stun2.l.google.com:19302'},
+
+                    // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    }
+
+                ],
+
+            }
+        ;
 
         const pc = new RTCPeerConnection(configuration);
 
@@ -686,6 +709,7 @@ class GroupVoiceChat {
                 audio.controls = true;
                 audio.title = `Peer: ${peerId}`;
                 audio.dataset.peerId = peerId; // ← ДОБАВИТЬ ЭТО
+                // audio.style.display = 'none'; // ← СКРЫВАЕМ!
 
                 // Устанавливаем громкость из регулятора
                 const volumeSlider = document.querySelector(`.volume-slider[data-peer-id="${peerId}"]`);
@@ -1197,38 +1221,44 @@ class GroupVoiceChat {
 
 // Отправить файл через WebSocket
     async sendFile(file) {
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            alert('Нет подключения к серверу');
-            return;
-        }
-
-        try {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const arrayBuffer = e.target.result;
-                const base64 = this.arrayBufferToBase64(arrayBuffer);
-
-                // Отправляем на сервер
-                this.ws.send(JSON.stringify({
-                    type: 'file_message',
-                    file_name: file.name,
-                    file_type: file.type,
-                    file_size: file.size,
-                    file_data: base64,
-                    timestamp: new Date().toISOString()
-                }));
-
-                // Показываем локально
-                this.addFileMessage(this.peerId, file, true);
-            };
-
-            reader.readAsArrayBuffer(file);
-
-        } catch (error) {
-            console.error('Error sending file:', error);
-            alert('Ошибка при отправке файла');
-        }
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        alert('Нет подключения к серверу');
+        return;
     }
+
+    try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const arrayBuffer = e.target.result;
+            const base64 = this.arrayBufferToBase64(arrayBuffer);
+
+            // ✅ ПРАВИЛЬНОЕ локальное отображение
+            const localFile = {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                data: base64 // ← Используем base64 а не File объект
+            };
+            this.addFileMessage(this.peerId, localFile, true);
+
+            // Отправляем на сервер
+            this.ws.send(JSON.stringify({
+                type: 'file_message',
+                file_name: file.name,
+                file_type: file.type,
+                file_size: file.size,
+                file_data: base64,
+                timestamp: new Date().toISOString()
+            }));
+        };
+
+        reader.readAsArrayBuffer(file);
+
+    } catch (error) {
+        console.error('Error sending file:', error);
+        alert('Ошибка при отправке файла');
+    }
+}
 
 // Конвертация ArrayBuffer в Base64
     arrayBufferToBase64(buffer) {
@@ -1242,69 +1272,62 @@ class GroupVoiceChat {
 
 // Добавить сообщение с файлом в чат
     async addFileMessage(peerId, file, isOwn = false) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
 
-        const time = new Date().toLocaleTimeString();
+    const time = new Date().toLocaleTimeString();
 
-        // Заголовок сообщения
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'message-header';
-        headerDiv.innerHTML = `
-        <span class="message-sender">${isOwn ? 'You' : `Peer ${peerId.substr(0, 6)}`}</span>
+    // Заголовок сообщения
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'message-header';
+    headerDiv.innerHTML = `
+        <span class="message-sender">${isOwn ? 'Вы' : `${peerId}`}</span>
         <span class="message-time">${time}</span>
     `;
 
-        // Контент с файлом
-        const fileDiv = document.createElement('div');
-        fileDiv.className = 'message-file';
+    // Контент с файлом
+    const fileDiv = document.createElement('div');
+    fileDiv.className = 'message-file';
 
-        if (file.type.startsWith('image/')) {
-            // Для изображений
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                fileDiv.innerHTML = `
-                <div class="file-content">
-                    <div class="file-icon"><i class="fas fa-image"></i></div>
-                    <div class="file-info">
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-size">${this.formatFileSize(file.size)}</div>
-                    </div>
+    if (file.type.startsWith('image/')) {
+        // 🔽 ПРАВИЛЬНОЕ создание Data URL 🔽
+        const dataUrl = `data:${file.type};base64,${file.data}`;
+
+        fileDiv.innerHTML = `
+            <div class="file-content">
+                <div class="file-icon"><i class="fas fa-image"></i></div>
+                <div class="file-info">
+                    <div class="file-name">${this.escapeHtml(file.name)}</div>
+                    <div class="file-size">${this.formatFileSize(file.size)}</div>
                 </div>
-                <img src="${e.target.result}" alt="${file.name}" class="file-image" 
-                     onclick="app.openImage('${e.target.result}')">
-            `;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            // Для других файлов - сначала читаем файл, потом создаем кнопку
-            const fileReader = new FileReader();
-            fileReader.onload = async (e) => {
-                const base64Data = this.arrayBufferToBase64(e.target.result);
-                fileDiv.innerHTML = `
-                <div class="file-content">
-                    <div class="file-icon"><i class="fas fa-file"></i></div>
-                    <div class="file-info">
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-size">${this.formatFileSize(file.size)}</div>
-                    </div>
-                    <button class="file-download" onclick="app.downloadFile('${this.escapeHtml(file.name)}', '${file.type}', '${base64Data}')">
-                        Скачать
-                    </button>
+            </div>
+            <img src="${dataUrl}" alt="${this.escapeHtml(file.name)}" class="file-image" 
+                 onclick="app.openImage('${dataUrl}')">
+        `;
+    } else {
+        // Для других файлов
+        fileDiv.innerHTML = `
+            <div class="file-content">
+                <div class="file-icon"><i class="fas fa-file"></i></div>
+                <div class="file-info">
+                    <div class="file-name">${this.escapeHtml(file.name)}</div>
+                    <div class="file-size">${this.formatFileSize(file.size)}</div>
                 </div>
-            `;
-            };
-            fileReader.readAsArrayBuffer(file);
-        }
-
-        // Собираем сообщение
-        messageDiv.appendChild(headerDiv);
-        messageDiv.appendChild(fileDiv);
-
-        const chatMessages = document.getElementById('chatMessages');
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+                <button class="file-download" onclick="app.downloadFile('${this.escapeHtml(file.name)}', '${file.type}', '${file.data}')">
+                    Скачать
+                </button>
+            </div>
+        `;
     }
+
+    // Собираем сообщение
+    messageDiv.appendChild(headerDiv);
+    messageDiv.appendChild(fileDiv);
+
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
 // Форматирование размера файла
     formatFileSize(bytes) {
@@ -1313,6 +1336,12 @@ class GroupVoiceChat {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
 // Открыть изображение в полном размере
@@ -1364,10 +1393,35 @@ class GroupVoiceChat {
 
         URL.revokeObjectURL(url);
     }
+
+    async handleFileMessage(data) {
+    console.log('📁 File message received from:', data.from_peer);
+
+    const isOwnMessage = data.from_peer === this.peerId;
+
+    // Если это наше собственное сообщение - игнорируем (уже показали локально)
+    if (isOwnMessage) {
+        console.log('Ignoring own file message (already shown locally)');
+        return;
+    }
+
+    // Создаем файловый объект из полученных данных
+    const file = {
+        name: data.file_name,
+        type: data.file_type,
+        size: data.file_size,
+        data: data.file_data
+    };
+
+    // Добавляем сообщение в чат
+    await this.addFileMessage(data.from_peer, file, false);
+}
+
 }
 
 
 // Запуск приложения
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new GroupVoiceChat();
+    // new GroupVoiceChat();
 });
