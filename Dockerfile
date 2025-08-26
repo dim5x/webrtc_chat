@@ -10,7 +10,22 @@ RUN apt-get update && apt-get install -y tree && rm -rf /var/lib/apt/lists/*
 
 
 # Копируем ВСЕ файлы проекта
-COPY . .
+#COPY . .
+
+# Копируем только необходимые файлы
+COPY requirements.txt .
+COPY tstvoip.py .
+COPY index.html .
+
+# Копируем статические файлы
+COPY static/fonts/ static/fonts/
+
+# Копируем ТОЛЬКО минифицированные CSS файлы
+COPY static/css/style.min.css static/css/style.css
+COPY static/css/fontello.min.css static/css/fontello.css
+
+# Копируем ТОЛЬКО минифицированные JS файлы
+COPY static/js/client.min.js static/js/client.js
 
 # Проверяем структуру файлов
 RUN echo "=== FILE TREE ===" && \
