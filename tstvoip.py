@@ -2,8 +2,9 @@
 import asyncio
 import json
 import os
-from aiohttp import web, WSMsgType
 import uuid
+
+from aiohttp import web, WSMsgType
 
 
 class WebRTCServer:
@@ -27,48 +28,7 @@ class WebRTCServer:
                             'timestamp': data.get('timestamp')
                         })
 
-    # async def websocket_handler(self, request):
-    #     ws = web.WebSocketResponse()
-    #     await ws.prepare(request)
-    #
-    #     peer_id = None
-    #     room_id = '100'
-    #
-    #     try:
-    #         async for msg in ws:
-    #             if msg.type == WSMsgType.TEXT:
-    #                 data = json.loads(msg.data)
-    #
-    #                 if data['type'] == 'join':
-    #                     peer_id = data['peer_id']
-    #                     room_id = data.get('room_id')
-    #
-    #                     if not room_id:
-    #                         room_id = str(uuid.uuid4())[:8]
-    #
-    #                     await self.handle_join(peer_id, room_id, ws, data)
-    #
-    #                 elif data['type'] == 'offer':
-    #                     await self.handle_offer(peer_id, data)
-    #
-    #                 elif data['type'] == 'answer':
-    #                     await self.handle_answer(peer_id, data)
-    #
-    #                 elif data['type'] == 'ice-candidate':
-    #                     await self.handle_ice_candidate(peer_id, data)
-    #
-    #                 elif data['type'] == 'text_message':
-    #                     await self.handle_text_message(peer_id, data)
-    #
-    #                 elif data['type'] == 'leave':
-    #                     await self.handle_disconnect(peer_id, room_id)
-    #
-    #     except Exception as e:
-    #         print(f"WebSocket error: {e}")
-    #     finally:
-    #         await self.handle_disconnect(peer_id, room_id)
-    #
-    #     return ws
+
     async def websocket_handler(self, request):
         # Обработка CORS preflight запросов
         if request.method == 'OPTIONS':
@@ -375,13 +335,16 @@ async def main():
     # Добавляем маршруты
     app.router.add_get('/', index_handler)
     app.router.add_get('/ws', server.websocket_handler)
-    app.router.add_get('/static/js/client.js', js_handler)
-    app.router.add_get('/static/css/style.css', css_handler)
-    # app.router.add_get('/static/css/all.min.css', css_handler)
-    app.router.add_get('/static/css/fontello.css', css_handler)
-    # app.router.add_get('/static/webfonts/fa-solid-900.woff2', font_handler)
-    app.router.add_get('/static/webfonts/fontello.woff2', font_handler)
-    app.router.add_get('/static/img/free-icon-font-users-alt-14243956.png', font_handler)
+
+    # app.router.add_get('/static/js/client.js', js_handler)
+    # app.router.add_get('/static/css/style.css', css_handler)
+    # app.router.add_get('/static/css/fontello.css', css_handler)
+
+    app.router.add_get('/static/js/client.min.js', js_handler)
+    app.router.add_get('/static/css/style.min.css', css_handler)
+    app.router.add_get('/static/css/fontello.min.css', css_handler)
+
+    app.router.add_get('/static/fonts/fontello.woff2', font_handler)
     app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
 
     runner = web.AppRunner(app)
