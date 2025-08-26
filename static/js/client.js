@@ -537,26 +537,26 @@ class GroupVoiceChat {
                     {urls: 'stun:stun2.l.google.com:19302'},
 
                     // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
-                    {
-                        urls: "turn:global.relay.metered.ca:80",
-                        username: "71769da3a63a7e4699e9c2df",
-                        credential: "Qfjq//h1tLkReXYW",
-                    },
-                    {
-                        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-                        username: "71769da3a63a7e4699e9c2df",
-                        credential: "Qfjq//h1tLkReXYW",
-                    },
-                    {
-                        urls: "turn:global.relay.metered.ca:443",
-                        username: "71769da3a63a7e4699e9c2df",
-                        credential: "Qfjq//h1tLkReXYW",
-                    },
-                    {
-                        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-                        username: "71769da3a63a7e4699e9c2df",
-                        credential: "Qfjq//h1tLkReXYW",
-                    },
+                    // {
+                    //     urls: "turn:global.relay.metered.ca:80",
+                    //     username: "71769da3a63a7e4699e9c2df",
+                    //     credential: "Qfjq//h1tLkReXYW",
+                    // },
+                    // {
+                    //     urls: "turn:global.relay.metered.ca:80?transport=tcp",
+                    //     username: "71769da3a63a7e4699e9c2df",
+                    //     credential: "Qfjq//h1tLkReXYW",
+                    // },
+                    // {
+                    //     urls: "turn:global.relay.metered.ca:443",
+                    //     username: "71769da3a63a7e4699e9c2df",
+                    //     credential: "Qfjq//h1tLkReXYW",
+                    // },
+                    // {
+                    //     urls: "turns:global.relay.metered.ca:443?transport=tcp",
+                    //     username: "71769da3a63a7e4699e9c2df",
+                    //     credential: "Qfjq//h1tLkReXYW",
+                    // },
 
                 ],
 
