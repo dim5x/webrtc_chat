@@ -78,8 +78,8 @@ class GroupVoiceChat {
             myIdElement.textContent = this.peerId;
         }
 
-        await this.setupEventListeners();
-        await this.setupTextChat();
+        this.setupEventListeners();
+        this.setupTextChat();
 
         // Запрашиваем разрешение на уведомления
         if ('Notification' in window && Notification.permission === 'default') {
@@ -387,7 +387,7 @@ class GroupVoiceChat {
                 this.handleRoomJoined(data);
                 break;
             case 'peer_joined':
-                await this.handlePeerJoined(data.peer_id);
+                this.handlePeerJoined(data.peer_id);
                 break;
             case 'peer_left':
                 this.handlePeerLeft(data.peer_id);
@@ -410,7 +410,7 @@ class GroupVoiceChat {
             case 'text_message':
                 const isOwnMessage = data.from_peer === this.peerId;
                 console.log('Received message:', {from: data.from_peer, own: this.peerId, isOwn: isOwnMessage});
-                await this.addMessageToChat(data.from_peer, data.message, isOwnMessage);
+                this.addMessageToChat(data.from_peer, data.message, isOwnMessage);
                 break;
             case 'file_message':
                 await this.handleFileMessage(data);
@@ -533,37 +533,32 @@ class GroupVoiceChat {
 
     createPeerConnection(peerId) {
         const configuration = {
-            iceServers: [
-                {urls: 'stun:stun.l.google.com:19302'},
-                {urls: 'stun:stun1.l.google.com:19302'},
-                {urls: 'stun:stun2.l.google.com:19302'},
+                iceServers: [
+                    {urls: 'stun:stun.l.google.com:19302'},
+                    {urls: 'stun:stun1.l.google.com:19302'},
+                    {urls: 'stun:stun2.l.google.com:19302'},
 
-                // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
-                {
-                    urls: "turn:global.relay.metered.ca:80",
-                    username: "71769da3a63a7e4699e9c2df",
-                    credential: "Qfjq//h1tLkReXYW",
-                },
-                {
-                    urls: "turn:global.relay.metered.ca:80?transport=tcp",
-                    username: "71769da3a63a7e4699e9c2df",
-                    credential: "Qfjq//h1tLkReXYW",
-                },
-                {
-                    urls: "turn:global.relay.metered.ca:443",
-                    username: "71769da3a63a7e4699e9c2df",
-                    credential: "Qfjq//h1tLkReXYW",
-                },
-                {
-                    urls: "turns:global.relay.metered.ca:443?transport=tcp",
-                    username: "71769da3a63a7e4699e9c2df",
-                    credential: "Qfjq//h1tLkReXYW",
-                },
+                    // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    }
 
-            ],
-            // iceTransportPolicy: 'relay' // ← Принудительно только TURN
-        }
+                ],
 
+            }
+        ;
 
         const pc = new RTCPeerConnection(configuration);
 
@@ -621,38 +616,6 @@ class GroupVoiceChat {
         // 🔼 КОНЕЦ МОНИТОРИНГА 🔼
 
         return pc;
-    }
-
-    async testTURN() {
-        console.group('🧪 TURN Connection Test');
-
-        // Принудительно используем только TURN
-        const testConfig = {
-            iceServers: [{
-                urls: 'turn:openrelay.metered.ca:80',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
-            }],
-            iceTransportPolicy: 'relay'
-        };
-
-        const testPC = new RTCPeerConnection(testConfig);
-
-        testPC.onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log('❄️ TURN candidate:', event.candidate);
-            }
-        };
-
-        testPC.onicegatheringstatechange = () => {
-            console.log('📡 ICE gathering:', testPC.iceGatheringState);
-        };
-
-        // Создаем offer чтобы запустить ICE gathering
-        const offer = await testPC.createOffer();
-        await testPC.setLocalDescription(offer);
-
-        console.groupEnd();
     }
 
     async logConnectionDetails(pc, peerId) {
@@ -1258,44 +1221,44 @@ class GroupVoiceChat {
 
 // Отправить файл через WebSocket
     async sendFile(file) {
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            alert('Нет подключения к серверу');
-            return;
-        }
-
-        try {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const arrayBuffer = e.target.result;
-                const base64 = this.arrayBufferToBase64(arrayBuffer);
-
-                // ✅ ПРАВИЛЬНОЕ локальное отображение
-                const localFile = {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    data: base64 // ← Используем base64 а не File объект
-                };
-                this.addFileMessage(this.peerId, localFile, true);
-
-                // Отправляем на сервер
-                this.ws.send(JSON.stringify({
-                    type: 'file_message',
-                    file_name: file.name,
-                    file_type: file.type,
-                    file_size: file.size,
-                    file_data: base64,
-                    timestamp: new Date().toISOString()
-                }));
-            };
-
-            reader.readAsArrayBuffer(file);
-
-        } catch (error) {
-            console.error('Error sending file:', error);
-            alert('Ошибка при отправке файла');
-        }
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        alert('Нет подключения к серверу');
+        return;
     }
+
+    try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const arrayBuffer = e.target.result;
+            const base64 = this.arrayBufferToBase64(arrayBuffer);
+
+            // ✅ ПРАВИЛЬНОЕ локальное отображение
+            const localFile = {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                data: base64 // ← Используем base64 а не File объект
+            };
+            this.addFileMessage(this.peerId, localFile, true);
+
+            // Отправляем на сервер
+            this.ws.send(JSON.stringify({
+                type: 'file_message',
+                file_name: file.name,
+                file_type: file.type,
+                file_size: file.size,
+                file_data: base64,
+                timestamp: new Date().toISOString()
+            }));
+        };
+
+        reader.readAsArrayBuffer(file);
+
+    } catch (error) {
+        console.error('Error sending file:', error);
+        alert('Ошибка при отправке файла');
+    }
+}
 
 // Конвертация ArrayBuffer в Base64
     arrayBufferToBase64(buffer) {
@@ -1309,28 +1272,28 @@ class GroupVoiceChat {
 
 // Добавить сообщение с файлом в чат
     async addFileMessage(peerId, file, isOwn = false) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
 
-        const time = new Date().toLocaleTimeString();
+    const time = new Date().toLocaleTimeString();
 
-        // Заголовок сообщения
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'message-header';
-        headerDiv.innerHTML = `
+    // Заголовок сообщения
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'message-header';
+    headerDiv.innerHTML = `
         <span class="message-sender">${isOwn ? 'Вы' : `${peerId}`}</span>
         <span class="message-time">${time}</span>
     `;
 
-        // Контент с файлом
-        const fileDiv = document.createElement('div');
-        fileDiv.className = 'message-file';
+    // Контент с файлом
+    const fileDiv = document.createElement('div');
+    fileDiv.className = 'message-file';
 
-        if (file.type.startsWith('image/')) {
-            // 🔽 ПРАВИЛЬНОЕ создание Data URL 🔽
-            const dataUrl = `data:${file.type};base64,${file.data}`;
+    if (file.type.startsWith('image/')) {
+        // 🔽 ПРАВИЛЬНОЕ создание Data URL 🔽
+        const dataUrl = `data:${file.type};base64,${file.data}`;
 
-            fileDiv.innerHTML = `
+        fileDiv.innerHTML = `
             <div class="file-content">
                 <div class="file-icon"><i class="fas fa-image"></i></div>
                 <div class="file-info">
@@ -1341,9 +1304,9 @@ class GroupVoiceChat {
             <img src="${dataUrl}" alt="${this.escapeHtml(file.name)}" class="file-image" 
                  onclick="app.openImage('${dataUrl}')">
         `;
-        } else {
-            // Для других файлов
-            fileDiv.innerHTML = `
+    } else {
+        // Для других файлов
+        fileDiv.innerHTML = `
             <div class="file-content">
                 <div class="file-icon"><i class="fas fa-file"></i></div>
                 <div class="file-info">
@@ -1355,16 +1318,16 @@ class GroupVoiceChat {
                 </button>
             </div>
         `;
-        }
-
-        // Собираем сообщение
-        messageDiv.appendChild(headerDiv);
-        messageDiv.appendChild(fileDiv);
-
-        const chatMessages = document.getElementById('chatMessages');
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    // Собираем сообщение
+    messageDiv.appendChild(headerDiv);
+    messageDiv.appendChild(fileDiv);
+
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
 // Форматирование размера файла
     formatFileSize(bytes) {
@@ -1432,27 +1395,27 @@ class GroupVoiceChat {
     }
 
     async handleFileMessage(data) {
-        console.log('📁 File message received from:', data.from_peer);
+    console.log('📁 File message received from:', data.from_peer);
 
-        const isOwnMessage = data.from_peer === this.peerId;
+    const isOwnMessage = data.from_peer === this.peerId;
 
-        // Если это наше собственное сообщение - игнорируем (уже показали локально)
-        if (isOwnMessage) {
-            console.log('Ignoring own file message (already shown locally)');
-            return;
-        }
-
-        // Создаем файловый объект из полученных данных
-        const file = {
-            name: data.file_name,
-            type: data.file_type,
-            size: data.file_size,
-            data: data.file_data
-        };
-
-        // Добавляем сообщение в чат
-        await this.addFileMessage(data.from_peer, file, false);
+    // Если это наше собственное сообщение - игнорируем (уже показали локально)
+    if (isOwnMessage) {
+        console.log('Ignoring own file message (already shown locally)');
+        return;
     }
+
+    // Создаем файловый объект из полученных данных
+    const file = {
+        name: data.file_name,
+        type: data.file_type,
+        size: data.file_size,
+        data: data.file_data
+    };
+
+    // Добавляем сообщение в чат
+    await this.addFileMessage(data.from_peer, file, false);
+}
 
 }
 
