@@ -407,6 +407,10 @@ body {
     gap: 4px;
 }
 
+.icon-music {
+    color: #735bc1; /* Задаёт зелёный цвет */
+}
+
 .icon-button {
     width: 32px;
     height: 32px;
@@ -449,6 +453,11 @@ body {
 /* Status indicators */
 .status-online {
     color: #3ba55d;
+    font-size: 10px;
+}
+
+.status-offline {
+    color: #5e5c5c;
     font-size: 10px;
 }
 

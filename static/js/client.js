@@ -44,7 +44,7 @@ class GroupVoiceChat {
         const noun = nouns[Math.floor(Math.random() * nouns.length)];
         const adjBase = adjectives[Math.floor(Math.random() * adjectives.length)];
         let adj = adjBase;
-        // Обрезаем последние 2 символа и добавляем "ая" или "ое".
+        // Обрезаем последние 2 символа и добавляем "-ая" или "-ое".
         if (noun.endsWith("а")) {
             adj = adjBase.slice(0, -2) + "ая";
         }
@@ -57,12 +57,10 @@ class GroupVoiceChat {
 
 
     async init() {
-        // Проверяем что все элементы существуют
+        // Проверяем что все элементы существуют.
         const requiredElements = [
-            'joinRoom', 'leaveRoom', 'muteIcon', 'deafenIcon',
-            'messageInput', 'sendMessage', 'roomId', 'status',
-            'statusCompact', 'myId', 'currentRoom', 'participantCount', 'attachButton'
-        ];
+            'joinRoom', 'leaveRoom', 'muteIcon', 'deafenIcon', 'messageInput', 'sendMessage', 'roomId',
+            'statusCompact', 'myId', 'currentRoom', 'participantCount', 'attachButton'];
 
         requiredElements.forEach(id => {
             const element = document.getElementById(id);
@@ -79,7 +77,7 @@ class GroupVoiceChat {
         }
 
         this.setupEventListeners();
-        this.setupTextChat();
+        await this.setupTextChat();
 
         // Запрашиваем разрешение на уведомления
         if ('Notification' in window && Notification.permission === 'default') {
@@ -210,11 +208,11 @@ class GroupVoiceChat {
         const joinButton = document.getElementById('joinRoom');
 
         // Безопасное получение элементов
-        const statusElement = document.getElementById('status');
+        // const statusElement = document.getElementById('status');
         const statusCompactElement = document.getElementById('statusCompact');
 
         if (joinButton) joinButton.disabled = true;
-        if (statusElement) statusElement.textContent = 'Connecting...';
+        // if (statusElement) statusElement.textContent = 'Connecting...';
         if (statusCompactElement) statusCompactElement.textContent = 'Connecting...';
 
         try {
@@ -240,7 +238,7 @@ class GroupVoiceChat {
             if (joinButton) joinButton.disabled = false;
             this.isConnecting = false;
 
-            if (statusElement) statusElement.textContent = 'Connection failed';
+            // if (statusElement) statusElement.textContent = 'Connection failed';
             if (statusCompactElement) statusCompactElement.textContent = 'Failed';
         }
     }
@@ -292,10 +290,10 @@ class GroupVoiceChat {
                     console.log('WebSocket connection opened successfully');
                     clearTimeout(connectionTimeout);
 
-                    const statusElement = document.getElementById('status');
+                    // const statusElement = document.getElementById('status');
                     const statusCompactElement = document.getElementById('statusCompact');
 
-                    if (statusElement) statusElement.textContent = 'Connected to server';
+                    // if (statusElement) statusElement.textContent = 'Connected to server';
                     if (statusCompactElement) {
                         statusCompactElement.textContent = 'Connected';
                         statusCompactElement.classList.add('connected');
@@ -387,7 +385,7 @@ class GroupVoiceChat {
                 this.handleRoomJoined(data);
                 break;
             case 'peer_joined':
-                this.handlePeerJoined(data.peer_id);
+                await this.handlePeerJoined(data.peer_id);
                 break;
             case 'peer_left':
                 this.handlePeerLeft(data.peer_id);
@@ -410,7 +408,7 @@ class GroupVoiceChat {
             case 'text_message':
                 const isOwnMessage = data.from_peer === this.peerId;
                 console.log('Received message:', {from: data.from_peer, own: this.peerId, isOwn: isOwnMessage});
-                this.addMessageToChat(data.from_peer, data.message, isOwnMessage);
+                await this.addMessageToChat(data.from_peer, data.message, isOwnMessage);
                 break;
             case 'file_message':
                 await this.handleFileMessage(data);
@@ -540,25 +538,29 @@ class GroupVoiceChat {
 
                     // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
                     {
-                        urls: 'turn:openrelay.metered.ca:80',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
+                        urls: "turn:global.relay.metered.ca:80",
+                        username: "71769da3a63a7e4699e9c2df",
+                        credential: "Qfjq//h1tLkReXYW",
                     },
                     {
-                        urls: 'turn:openrelay.metered.ca:443',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
+                        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+                        username: "71769da3a63a7e4699e9c2df",
+                        credential: "Qfjq//h1tLkReXYW",
                     },
                     {
-                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    }
+                        urls: "turn:global.relay.metered.ca:443",
+                        username: "71769da3a63a7e4699e9c2df",
+                        credential: "Qfjq//h1tLkReXYW",
+                    },
+                    {
+                        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+                        username: "71769da3a63a7e4699e9c2df",
+                        credential: "Qfjq//h1tLkReXYW",
+                    },
 
                 ],
 
-            }
-        ;
+            };
 
         const pc = new RTCPeerConnection(configuration);
 
@@ -719,7 +721,7 @@ class GroupVoiceChat {
 
                 const info = document.createElement('div');
                 info.className = 'audio-stream-info';
-                info.textContent = `Peer: ${peerId.substr(0, 6)}`;
+                info.textContent = `${peerId}`;
 
                 audioWrapper.appendChild(audio);
                 audioWrapper.appendChild(info);
@@ -781,7 +783,6 @@ class GroupVoiceChat {
             selfDiv.innerHTML = `
             <div class="participant-avatar">Y</div>
             <div class="participant-info">
-<!--                <div class="participant-name">You (${this.peerId.substr(0, 6)})</div>-->
                 <div class="participant-name">Вы: ${this.peerId}</div>
                 <div class="status-online">● Online</div>
             </div>
@@ -799,9 +800,8 @@ class GroupVoiceChat {
                     participantDiv.dataset.peerId = peerId;
 
                     participantDiv.innerHTML = `
-                    <div class="participant-avatar">${peerId.substr(0, 1).toUpperCase()}</div>
+                    <div class="participant-avatar">${peerId.charAt(0).toUpperCase()}</div>
                     <div class="participant-info">
-<!--                        <div class="participant-name">User ${peerId.substr(0, 6)}</div>-->
                         <div class="participant-name">${peerId}</div>
                         <div class="status-online">● Online</div>
                     </div>
@@ -814,10 +814,10 @@ class GroupVoiceChat {
                 }
             });
 
-            // Обновляем счетчик
+            // Обновляем счетчик.
             const participantCountElement = document.getElementById('participantCount');
             if (participantCountElement) {
-                participantCountElement.textContent = currentPeers.length;
+                participantCountElement.textContent = String(currentPeers.length);
             }
 
             // Настраиваем регуляторы громкости
@@ -923,6 +923,7 @@ class GroupVoiceChat {
         const leaveButton = document.getElementById('leaveRoom');
         const muteButton = document.getElementById('muteIcon');
         const deafenButton = document.getElementById('deafenIcon');
+        const attachButton=document.getElementById('attachButton');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendMessage');
         const roomIdInput = document.getElementById('roomId');
@@ -959,7 +960,7 @@ class GroupVoiceChat {
         if (currentRoomElement) currentRoomElement.textContent = 'Not connected';
 
         // Очищаем список участников
-        this.updatePeerList([]);
+        // this.updatePeerList([]);
 
         // Очищаем чат (оставляем только системное сообщение)
         if (chatMessagesElement) {
@@ -982,8 +983,7 @@ class GroupVoiceChat {
             audioContainer.innerHTML = `
             <div style="color: #72767d; font-size: 12px; text-align: center; padding: 10px;">
                 No active audio streams
-            </div>
-        `;
+            </div>`;
         }
 
         // Закрываем соединения
@@ -1014,7 +1014,10 @@ class GroupVoiceChat {
         this.roomId = null;
         this.isConnecting = false;
 
+        // Обновляем после обнуления roomID, иначе не будет применяться css-класс 'status-offline' в updatePeerList().
+        this.updatePeerList([]);
         console.log('Left room successfully');
+
     }
 
     toggleMute() {
@@ -1029,10 +1032,10 @@ class GroupVoiceChat {
 
             if (this.isMuted) {
                 muteButton.classList.add('active');
-                muteButton.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                muteButton.innerHTML = '<i class="icon-mic-off"></i>';
             } else {
                 muteButton.classList.remove('active');
-                muteButton.innerHTML = '<i class="fas fa-microphone"></i>';
+                muteButton.innerHTML = '<i class="icon-mic-2"></i>';
             }
         }
     }
@@ -1043,10 +1046,10 @@ class GroupVoiceChat {
 
         if (this.isDeafened) {
             deafenButton.classList.add('active');
-            deafenButton.innerHTML = '<i class="fas fa-headphones-slash"></i>';
+            deafenButton.innerHTML = '<i class="icon-headphones-1"></i>';
         } else {
             deafenButton.classList.remove('active');
-            deafenButton.innerHTML = '<i class="fas fa-headphones"></i>';
+            deafenButton.innerHTML = '<i class="icon-headphones-1"></i>';
         }
 
         this.updateAudioElements();
@@ -1065,25 +1068,6 @@ class GroupVoiceChat {
         }
     }
 
-
-    // attachFile() {
-    //     this.toggleAttachMenu();
-    //     console.log('Attach file clicked');
-    //
-    //     const input = document.createElement('input');
-    //     input.type = 'file';
-    //     input.multiple = false;
-    //
-    //     input.onchange = (e) => {
-    //         const file = e.target.files[0];
-    //         if (file) {
-    //             console.log('File selected:', file.name);
-    //             // this.sendFile(file);
-    //         }
-    //     };
-    //
-    //     input.click();
-    // }
 
     setupEventListeners() {
         console.log('Setting up event listeners...');
@@ -1196,69 +1180,69 @@ class GroupVoiceChat {
         input.click();
     }
 
-// Прикрепить любой файл
-//     async attachFile() {
-//         this.toggleAttachMenu();
-//
-//         const input = document.createElement('input');
-//         input.type = 'file';
-//         input.multiple = false;
-//
-//         input.onchange = async (e) => {
-//             const file = e.target.files[0];
-//             if (file) {
-//                 if (file.size > this.maxFileSize) {
-//                     alert('Файл слишком большой. Максимум 10MB');
-//                     return;
-//                 }
-//
-//                 await this.sendFile(file);
-//             }
-//         };
-//
-//         input.click();
-//     }
+    // Прикрепить любой файл
+    async attachFile() {
+        this.toggleAttachMenu();
 
-// Отправить файл через WebSocket
-    async sendFile(file) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-        alert('Нет подключения к серверу');
-        return;
-    }
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = false;
 
-    try {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const arrayBuffer = e.target.result;
-            const base64 = this.arrayBufferToBase64(arrayBuffer);
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > this.maxFileSize) {
+                    alert('Файл слишком большой. Максимум 10MB');
+                    return;
+                }
 
-            // ✅ ПРАВИЛЬНОЕ локальное отображение
-            const localFile = {
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                data: base64 // ← Используем base64 а не File объект
-            };
-            this.addFileMessage(this.peerId, localFile, true);
-
-            // Отправляем на сервер
-            this.ws.send(JSON.stringify({
-                type: 'file_message',
-                file_name: file.name,
-                file_type: file.type,
-                file_size: file.size,
-                file_data: base64,
-                timestamp: new Date().toISOString()
-            }));
+                await this.sendFile(file);
+            }
         };
 
-        reader.readAsArrayBuffer(file);
-
-    } catch (error) {
-        console.error('Error sending file:', error);
-        alert('Ошибка при отправке файла');
+        input.click();
     }
-}
+
+    // Отправить файл через WebSocket
+    async sendFile(file) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            alert('Нет подключения к серверу');
+            return;
+        }
+
+        try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const arrayBuffer = e.target.result;
+                const base64 = this.arrayBufferToBase64(arrayBuffer);
+
+                // ✅ ПРАВИЛЬНОЕ локальное отображение
+                const localFile = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: base64 // ← Используем base64 а не File объект
+                };
+                await this.addFileMessage(this.peerId, localFile, true);
+
+                // Отправляем на сервер
+                this.ws.send(JSON.stringify({
+                    type: 'file_message',
+                    file_name: file.name,
+                    file_type: file.type,
+                    file_size: file.size,
+                    file_data: base64,
+                    timestamp: new Date().toISOString()
+                }));
+            };
+
+            reader.readAsArrayBuffer(file);
+
+        } catch (error) {
+            console.error('Error sending file:', error);
+            alert('Ошибка при отправке файла');
+        }
+    }
 
 // Конвертация ArrayBuffer в Base64
     arrayBufferToBase64(buffer) {
@@ -1272,28 +1256,28 @@ class GroupVoiceChat {
 
 // Добавить сообщение с файлом в чат
     async addFileMessage(peerId, file, isOwn = false) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
 
-    const time = new Date().toLocaleTimeString();
+        const time = new Date().toLocaleTimeString();
 
-    // Заголовок сообщения
-    const headerDiv = document.createElement('div');
-    headerDiv.className = 'message-header';
-    headerDiv.innerHTML = `
+        // Заголовок сообщения
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'message-header';
+        headerDiv.innerHTML = `
         <span class="message-sender">${isOwn ? 'Вы' : `${peerId}`}</span>
         <span class="message-time">${time}</span>
     `;
 
-    // Контент с файлом
-    const fileDiv = document.createElement('div');
-    fileDiv.className = 'message-file';
+        // Контент с файлом
+        const fileDiv = document.createElement('div');
+        fileDiv.className = 'message-file';
 
-    if (file.type.startsWith('image/')) {
-        // 🔽 ПРАВИЛЬНОЕ создание Data URL 🔽
-        const dataUrl = `data:${file.type};base64,${file.data}`;
+        if (file.type.startsWith('image/')) {
+            // 🔽 ПРАВИЛЬНОЕ создание Data URL 🔽
+            const dataUrl = `data:${file.type};base64,${file.data}`;
 
-        fileDiv.innerHTML = `
+            fileDiv.innerHTML = `
             <div class="file-content">
                 <div class="file-icon"><i class="fas fa-image"></i></div>
                 <div class="file-info">
@@ -1304,9 +1288,9 @@ class GroupVoiceChat {
             <img src="${dataUrl}" alt="${this.escapeHtml(file.name)}" class="file-image" 
                  onclick="app.openImage('${dataUrl}')">
         `;
-    } else {
-        // Для других файлов
-        fileDiv.innerHTML = `
+        } else {
+            // Для других файлов
+            fileDiv.innerHTML = `
             <div class="file-content">
                 <div class="file-icon"><i class="fas fa-file"></i></div>
                 <div class="file-info">
@@ -1318,16 +1302,16 @@ class GroupVoiceChat {
                 </button>
             </div>
         `;
+        }
+
+        // Собираем сообщение
+        messageDiv.appendChild(headerDiv);
+        messageDiv.appendChild(fileDiv);
+
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-
-    // Собираем сообщение
-    messageDiv.appendChild(headerDiv);
-    messageDiv.appendChild(fileDiv);
-
-    const chatMessages = document.getElementById('chatMessages');
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
 
 // Форматирование размера файла
     formatFileSize(bytes) {
@@ -1395,27 +1379,27 @@ class GroupVoiceChat {
     }
 
     async handleFileMessage(data) {
-    console.log('📁 File message received from:', data.from_peer);
+        console.log('📁 File message received from:', data.from_peer);
 
-    const isOwnMessage = data.from_peer === this.peerId;
+        const isOwnMessage = data.from_peer === this.peerId;
 
-    // Если это наше собственное сообщение - игнорируем (уже показали локально)
-    if (isOwnMessage) {
-        console.log('Ignoring own file message (already shown locally)');
-        return;
+        // Если это наше собственное сообщение - игнорируем (уже показали локально)
+        if (isOwnMessage) {
+            console.log('Ignoring own file message (already shown locally)');
+            return;
+        }
+
+        // Создаем файловый объект из полученных данных
+        const file = {
+            name: data.file_name,
+            type: data.file_type,
+            size: data.file_size,
+            data: data.file_data
+        };
+
+        // Добавляем сообщение в чат
+        await this.addFileMessage(data.from_peer, file, false);
     }
-
-    // Создаем файловый объект из полученных данных
-    const file = {
-        name: data.file_name,
-        type: data.file_type,
-        size: data.file_size,
-        data: data.file_data
-    };
-
-    // Добавляем сообщение в чат
-    await this.addFileMessage(data.from_peer, file, false);
-}
 
 }
 

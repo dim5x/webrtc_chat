@@ -189,6 +189,7 @@ class WebRTCServer:
                     'from_peer': peer_id,
                     'timestamp': data.get('timestamp', '')
                 })
+
     async def handle_join(self, peer_id, room_id, ws, data):
         if room_id in self.rooms and len(self.rooms[room_id]) >= 6:
             await ws.send_json({
@@ -308,81 +309,38 @@ async def index_handler(request):
     except FileNotFoundError:
         return web.Response(text='<h1>File index.html not found</h1>', content_type='text/html')
 
-
-# Обработчик для JavaScript файлов
-# async def js_handler(request):
-#     try:
-#         filename = request.match_info.get('filename', '')
-#         with open(f'static/{filename}', 'r', encoding='utf-8') as f:
-#             content = f.read()
-#         return web.Response(text=content, content_type='application/javascript')
-#     except FileNotFoundError:
-#         return web.Response(text='// File not found', content_type='application/javascript')
-
+# Обработчик для JS файлов.
 async def js_handler(request):
     try:
-        # filename = request.match_info.get('filename', '')
-        # Безопасная проверка пути
-        # if '..' in filename or '/' in filename or not filename.endswith('.js'):
-        #     return web.Response(status=403, text="Forbidden")
-
-        # with open(f'static/{filename}', 'r', encoding='utf-8') as f:
-        with open(f'static/client.js', 'r', encoding='utf-8') as f:
+        with open(f'static/js/client.js', 'r', encoding='utf-8') as f:
             content = f.read()
         return web.Response(text=content, content_type='application/javascript')
     except FileNotFoundError:
-        return web.Response(text='// File not found', content_type='application/javascript')
+        return web.Response(text='// File not found', content_type='application/javascript', status=404)
     except Exception as e:
         print(f"Error serving JS: {e}")
-        return web.Response(text='// Server error', content_type='application/javascript')
+        return web.Response(text='// Server error', content_type='application/javascript', status=500)
 
 
-# Добавьте обработчик для CSS файлов
-# async def css_handler(request):
-#     try:
-#         with open('static/style.css', 'r', encoding='utf-8') as f:
-#             content = f.read()
-#         return web.Response(text=content, content_type='text/css')
-#     except FileNotFoundError:
-#         return web.Response(text='/* CSS file not found */', content_type='text/css')
-
+# Обработчик для CSS файлов.
 async def css_handler(request):
+    name = request.path[1:]  # убираем ведущий слэш в "/static/css/style.css".
     try:
-        # filename = request.match_info.get('filename', '')
-        with open(f'static/style.css', 'r', encoding='utf-8') as f:
+        with open(name, 'r', encoding='utf-8') as f:
             content = f.read()
         return web.Response(text=content, content_type='text/css')
-        # with open(f'static/css/all.min.css', 'r', encoding='utf-8') as f:
-        #     content = f.read()
-        # return web.Response(text=content, content_type='text/css')
+
     except FileNotFoundError:
-        return web.Response(text='/* CSS file not found */', content_type='text/css')
+        return web.Response(text='/* CSS file not found */', content_type='text/css', status=404)
     except Exception as e:
         print(f"Error serving CSS: {e}")
-        return web.Response(text='/* Server error */', content_type='text/css')
+        return web.Response(text='/* Server error */', content_type='text/css', status=500)
 
 
-# async def main():
-#     server = WebRTCServer()
-#
-#     app = web.Application()
-#
-#     # Добавляем маршруты
-#     app.router.add_get('/', index_handler)
-#     app.router.add_get('/ws', server.websocket_handler)
-#     app.router.add_get('/static/{filename}', js_handler)
-#     app.router.add_get('/static/style.css', css_handler)
-#     # Запускаем сервер
-#     runner = web.AppRunner(app)
-#     await runner.setup()
-#
-#     # site = web.TCPSite(runner, 'localhost', 8080)
-#     site = web.TCPSite(runner, '0.0.0.0', 8080)  # Для доступа извне
-#     await site.start()
-#     print("Server started at http://localhost:8080")
-#     print("Make sure you have index.html and static/client.js files in the same directory")
-#
-#     await asyncio.Future()
+async def font_handler(request):
+    file_path = request.path[1:]
+    return web.FileResponse(path=file_path)
+
 
 async def main():
     server = WebRTCServer()
@@ -417,8 +375,13 @@ async def main():
     # Добавляем маршруты
     app.router.add_get('/', index_handler)
     app.router.add_get('/ws', server.websocket_handler)
-    app.router.add_get('/static/client.js', js_handler)
-    app.router.add_get('/static/style.css', css_handler)
+    app.router.add_get('/static/js/client.js', js_handler)
+    app.router.add_get('/static/css/style.css', css_handler)
+    # app.router.add_get('/static/css/all.min.css', css_handler)
+    app.router.add_get('/static/css/fontello.css', css_handler)
+    # app.router.add_get('/static/webfonts/fa-solid-900.woff2', font_handler)
+    app.router.add_get('/static/webfonts/fontello.woff2', font_handler)
+    app.router.add_get('/static/img/free-icon-font-users-alt-14243956.png', font_handler)
     app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
 
     runner = web.AppRunner(app)
