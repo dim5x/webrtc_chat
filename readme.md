@@ -1,0 +1,1 @@
+![scam (Среднее).png](static%2Fimg%2Fscam%20%28%D0%A1%D1%80%D0%B5%D0%B4%D0%BD%D0%B5%D0%B5%29.png)
