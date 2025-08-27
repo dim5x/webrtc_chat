@@ -6,10 +6,9 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Устанавливаем tree для красивого вывода
-RUN apt-get update && apt-get install -y --no-install-recommends tree && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends tree=2.2.1 && rm -rf /var/lib/apt/lists/*
 
 # Копируем только необходимые файлы
-COPY requirements.txt .
 COPY main.py .
 COPY index.html .
 
@@ -25,7 +24,6 @@ COPY static/js/client.min.js static/js/client.js
 
 # Проверяем структуру файлов
 RUN tree -h
-RUN tree --version
 
 EXPOSE 8080
 
