@@ -26,7 +26,7 @@ COPY static/js/client.min.js static/js/client.js
 # Проверяем структуру файлов
 RUN echo "=== FILE TREE ===" && \
     #tree -h -I '__pycache__|node_modules|.git'
-    tree -h -I
+    tree -h
 
 # Проверяем что файлы на месте
 #RUN echo "Files in container:" && ls -la
