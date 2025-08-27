@@ -272,7 +272,7 @@ async def index_handler(request):
 # Обработчик для JS файлов.
 async def js_handler(request):
     try:
-        with open(f'static/js/client.js', 'r', encoding='utf-8') as f:
+        with open('static/js/client.js', 'r', encoding='utf-8') as f:
             content = f.read()
         return web.Response(text=content, content_type='application/javascript')
     except FileNotFoundError:

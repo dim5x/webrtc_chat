@@ -1,4 +1,3 @@
-// static/client.js
 class GroupVoiceChat {
     constructor() {
         // this.peerId = Math.random().toString(36).substr(2, 9);

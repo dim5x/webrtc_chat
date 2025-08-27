@@ -6,7 +6,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Устанавливаем tree для красивого вывода
-RUN apt-get update && apt-get install -y tree && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends tree && rm -rf /var/lib/apt/lists/*
 
 # Копируем только необходимые файлы
 COPY requirements.txt .
