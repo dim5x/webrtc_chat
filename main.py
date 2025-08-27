@@ -1,4 +1,3 @@
-# server.py
 import asyncio
 import json
 import os
@@ -38,7 +37,9 @@ class WebRTCServer:
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                    'Access-Control-Max-Age': '86400'
+                    'Access-Control-Max-Age': '86400',
+                    # 'Accept-Encoding': 'gzip, deflate, br, zstd',
+
                 }
             )
 
@@ -63,7 +64,7 @@ class WebRTCServer:
             return web.Response(status=500, text="WebSocket handshake failed")
 
         peer_id = None
-        room_id = '100'
+        room_id = None
 
         try:
             # Логируем новое подключение
@@ -82,7 +83,7 @@ class WebRTCServer:
                             if not room_id:
                                 room_id = str(uuid.uuid4())[:8]
 
-                            await self.handle_join(peer_id, room_id, ws, data)
+                            await self.handle_join(peer_id, room_id, ws)
 
                         elif data['type'] == 'offer':
                             await self.handle_offer(peer_id, data)
@@ -150,7 +151,7 @@ class WebRTCServer:
                     'timestamp': data.get('timestamp', '')
                 })
 
-    async def handle_join(self, peer_id, room_id, ws, data):
+    async def handle_join(self, peer_id, room_id, ws):
         if room_id in self.rooms and len(self.rooms[room_id]) >= 6:
             await ws.send_json({
                 'type': 'error',
@@ -224,6 +225,7 @@ class WebRTCServer:
                 })
 
     async def handle_disconnect(self, peer_id, room_id=None):
+        print('************************************************')
         if not room_id and peer_id in self.peer_rooms:
             room_id = self.peer_rooms[peer_id]
 
@@ -244,7 +246,37 @@ class WebRTCServer:
                 if not self.rooms[room_id]:
                     del self.rooms[room_id]
 
-            print(f"Peer {peer_id} disconnected from room {room_id}")
+            print(f'Peer "{peer_id}" disconnected from room "{room_id}"')
+
+    # От гпт
+    # async def handle_disconnect(self, peer_id, room_id=None):
+    #     print('*************************************')
+    #     # Определяем room_id, если оно не передано
+    #     room_id = room_id or self.peer_rooms.get(peer_id)
+    #
+    #     # Удаляем соединение, если оно существует
+    #     connection = self.connections.pop(peer_id, None)
+    #     if connection:
+    #         print(f'Connection for peer "{peer_id}" removed.')
+    #
+    #     # Проверяем, есть ли peer_id в peer_rooms
+    #     if peer_id in self.peer_rooms:
+    #         room_id = room_id or self.peer_rooms[peer_id]
+    #         del self.peer_rooms[peer_id]
+    #
+    #         # Проверяем, есть ли peer_id в комнате
+    #         if room_id in self.rooms and peer_id in self.rooms[room_id]:
+    #             self.rooms[room_id].remove(peer_id)
+    #             await self.broadcast_peer_list(room_id)
+    #
+    #             # Удаляем комнату, если она пуста
+    #             if not self.rooms[room_id]:
+    #                 del self.rooms[room_id]
+    #                 print(f"Room {room_id} is now empty and has been removed.")
+    #
+    #         print(f"Peer {peer_id} disconnected from room {room_id}.")
+    #     else:
+    #         print(f"Peer {peer_id} not found in peer_rooms.")
 
     async def broadcast_peer_list(self, room_id):
         """Отправляет всем в комнате текущий список участников"""
@@ -298,8 +330,10 @@ async def css_handler(request):
 
 
 async def font_handler(request):
+    # if file_path is None:
     file_path = request.path[1:]
     return web.FileResponse(path=file_path)
+
 
 
 async def main():
@@ -317,14 +351,16 @@ async def main():
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                         'Access-Control-Allow-Headers': 'Content-Type',
-                        'Access-Control-Max-Age': '86400'
+                        'Access-Control-Max-Age': '86400',
+                        # 'Accept-Encoding': 'gzip, deflate, br, zstd',
                     }
                 )
 
             response = await handler(request)
             response.headers.update({
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
             })
             return response
 
@@ -334,16 +370,12 @@ async def main():
 
     # Добавляем маршруты
     app.router.add_get('/', index_handler)
+    # app.router.add_get('/', font_handler(request,file_path='index.html'))
     app.router.add_get('/ws', server.websocket_handler)
 
     app.router.add_get('/static/js/client.js', js_handler)
     app.router.add_get('/static/css/style.css', css_handler)
     app.router.add_get('/static/css/fontello.css', css_handler)
-
-    # app.router.add_get('/static/js/client.min.js', js_handler)
-    # app.router.add_get('/static/css/style.min.css', css_handler)
-    # app.router.add_get('/static/css/fontello.min.css', css_handler)
-
     app.router.add_get('/static/fonts/fontello.woff2', font_handler)
     app.router.add_get('/static/img/scam.png', font_handler)
     app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
