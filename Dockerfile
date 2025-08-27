@@ -8,13 +8,9 @@ RUN pip install -r requirements.txt
 # Устанавливаем tree для красивого вывода
 RUN apt-get update && apt-get install -y tree && rm -rf /var/lib/apt/lists/*
 
-
-# Копируем ВСЕ файлы проекта
-#COPY . .
-
 # Копируем только необходимые файлы
 COPY requirements.txt .
-COPY tstvoip.py .
+COPY main.py .
 COPY index.html .
 
 # Копируем статические файлы
@@ -29,17 +25,11 @@ COPY static/js/client.min.js static/js/client.js
 
 # Проверяем структуру файлов
 RUN echo "=== FILE TREE ===" && \
-    tree -h -I '__pycache__|node_modules|.git' && \
-    echo "" && \
-    echo "=== JS FILES ===" && \
-    ls -lah static/js/ && \
-    echo "" && \
-    echo "=== CSS FILES ===" && \
-    ls -lah static/css/
+    tree -h -I '__pycache__|node_modules|.git'
 
 # Проверяем что файлы на месте
 #RUN echo "Files in container:" && ls -la
 
 EXPOSE 8080
 
-CMD ["python", "tstvoip.py"]
+CMD ["python", "main.py"]

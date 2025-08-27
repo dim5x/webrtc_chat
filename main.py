@@ -345,6 +345,7 @@ async def main():
     # app.router.add_get('/static/css/fontello.min.css', css_handler)
 
     app.router.add_get('/static/fonts/fontello.woff2', font_handler)
+    app.router.add_get('/static/img/scam.png', font_handler)
     app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
 
     runner = web.AppRunner(app)
