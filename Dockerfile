@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends tree && rm -rf 
 
 # Копируем только необходимые файлы
 COPY main.py .
+COPY healthchek.py .
 COPY index.html .
 
 # Копируем статические файлы
@@ -26,5 +27,7 @@ COPY static/js/client.min.js static/js/client.js
 RUN tree -h
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD python /app/healthchek.py
 
 CMD ["python", "main.py"]
