@@ -13,7 +13,7 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Копируем только необходимые файлы
 COPY main.py .
-COPY healthcheck.py .
+#COPY healthcheck.py .
 COPY index.html .
 
 # Копируем статические файлы
@@ -37,6 +37,6 @@ RUN tree -h
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD ["python", "healthcheck.py"]
+#HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD ["python", "healthcheck.py"]
 
 CMD ["python", "main.py"]
