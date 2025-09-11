@@ -28,6 +28,6 @@ RUN tree -h
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD python /app/healthchek.py
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD ["python", "healthchek.py"]
 
 CMD ["python", "main.py"]

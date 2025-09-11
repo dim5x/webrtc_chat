@@ -6,6 +6,7 @@ import aiohttp
 
 
 async def main():
+    print('lol kek')
     try:
         timeout = aiohttp.ClientTimeout(total=5)
         async with aiohttp.ClientSession(timeout=timeout) as session:
