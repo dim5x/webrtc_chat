@@ -334,13 +334,13 @@ async def font_handler(request):
     file_path = request.path[1:]
     return web.FileResponse(path=file_path)
 
-# async def health_handler(request):
-#     return web.json_response({"status": "ok"})
+async def health_handler(request):
+    return web.json_response({"status": "ok"})
 
 async def main():
     server = WebRTCServer()
     app = web.Application()
-    # app.router.add_get('/health', health_handler)
+    app.router.add_get('/health', health_handler)
     # Добавляем CORS middleware
     async def cors_middleware(app, handler):
         async def middleware_handler(request):
