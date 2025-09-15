@@ -536,24 +536,24 @@ class GroupVoiceChat {
                 {urls: 'stun:stun2.l.google.com:19302'},
 
                 // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
-                {
-                    urls: 'turn:94.183.234.220:3478',
-                    username: 'morzh',
-                    credential: 'penis_morzha'
-                },
-                // Дополнительные варианты для надежности
-                {
-                    urls: 'turn:94.183.234.220:3478?transport=tcp',
-                    username: 'morzh',
-                    credential: 'penis_morzha'
-                },
-
-                // Если настроен TLS
-                {
-                    urls: 'turns:94.183.234.220:5349?transport=tcp',
-                    username: 'morzh',
-                    credential: 'penis_morzha'
-                }
+                // {
+                //     urls: 'turn:94.183.234.220:3478',
+                //     username: 'morzh',
+                //     credential: 'penis_morzha'
+                // },
+                // // Дополнительные варианты для надежности
+                // {
+                //     urls: 'turn:94.183.234.220:3478?transport=tcp',
+                //     username: 'morzh',
+                //     credential: 'penis_morzha'
+                // },
+                //
+                // // Если настроен TLS
+                // {
+                //     urls: 'turns:94.183.234.220:5349?transport=tcp',
+                //     username: 'morzh',
+                //     credential: 'penis_morzha'
+                // }
 
                 // {
                 //     urls: "turn:global.relay.metered.ca:80",
