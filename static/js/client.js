@@ -541,6 +541,19 @@ class GroupVoiceChat {
                     username: 'morzh',
                     credential: 'penis_morzha',
                     credentialType: 'password'
+                },
+                // Дополнительные варианты для надежности
+                {
+                    urls: 'turn:94.183.234.220:3478?transport=tcp',
+                    username: 'morzh',
+                    credential: 'penis_morzha'
+                },
+
+                // Если настроен TLS
+                {
+                    urls: 'turns:94.183.234.220:5349?transport=tcp',
+                    username: 'morzh',
+                    credential: 'penis_morzha'
                 }
 
                 // {
