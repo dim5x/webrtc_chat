@@ -530,36 +530,43 @@ class GroupVoiceChat {
 
     createPeerConnection(peerId) {
         const configuration = {
-                iceServers: [
-                    {urls: 'stun:stun.l.google.com:19302'},
-                    {urls: 'stun:stun1.l.google.com:19302'},
-                    {urls: 'stun:stun2.l.google.com:19302'},
+            iceServers: [
+                {urls: 'stun:stun.l.google.com:19302'},
+                {urls: 'stun:stun1.l.google.com:19302'},
+                {urls: 'stun:stun2.l.google.com:19302'},
 
-                    // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
-                    {
-                        urls: "turn:global.relay.metered.ca:80",
-                        username: "71769da3a63a7e4699e9c2df",
-                        credential: "Qfjq//h1tLkReXYW",
-                    },
-                    {
-                        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-                        username: "71769da3a63a7e4699e9c2df",
-                        credential: "Qfjq//h1tLkReXYW",
-                    },
-                    {
-                        urls: "turn:global.relay.metered.ca:443",
-                        username: "71769da3a63a7e4699e9c2df",
-                        credential: "Qfjq//h1tLkReXYW",
-                    },
-                    {
-                        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-                        username: "71769da3a63a7e4699e9c2df",
-                        credential: "Qfjq//h1tLkReXYW",
-                    },
+                // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
+                {
+                    urls: 'turn:94.183.234.220:3478',
+                    username: 'morzh',
+                    credential: 'penis_morzha',
+                    credentialType: 'password'
+                }
 
-                ],
+                // {
+                //     urls: "turn:global.relay.metered.ca:80",
+                //     username: "71769da3a63a7e4699e9c2df",
+                //     credential: "Qfjq//h1tLkReXYW",
+                // },
+                // {
+                //     urls: "turn:global.relay.metered.ca:80?transport=tcp",
+                //     username: "71769da3a63a7e4699e9c2df",
+                //     credential: "Qfjq//h1tLkReXYW",
+                // },
+                // {
+                //     urls: "turn:global.relay.metered.ca:443",
+                //     username: "71769da3a63a7e4699e9c2df",
+                //     credential: "Qfjq//h1tLkReXYW",
+                // },
+                // {
+                //     urls: "turns:global.relay.metered.ca:443?transport=tcp",
+                //     username: "71769da3a63a7e4699e9c2df",
+                //     credential: "Qfjq//h1tLkReXYW",
+                // },
 
-            };
+            ],
+
+        };
 
         const pc = new RTCPeerConnection(configuration);
 
@@ -922,7 +929,7 @@ class GroupVoiceChat {
         const leaveButton = document.getElementById('leaveRoom');
         const muteButton = document.getElementById('muteIcon');
         const deafenButton = document.getElementById('deafenIcon');
-        const attachButton=document.getElementById('attachButton');
+        const attachButton = document.getElementById('attachButton');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendMessage');
         const roomIdInput = document.getElementById('roomId');
