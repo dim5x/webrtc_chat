@@ -539,8 +539,7 @@ class GroupVoiceChat {
                 {
                     urls: 'turn:94.183.234.220:3478',
                     username: 'morzh',
-                    credential: 'penis_morzha',
-                    credentialType: 'password'
+                    credential: 'penis_morzha'
                 },
                 // Дополнительные варианты для надежности
                 {
