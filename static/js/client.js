@@ -536,6 +536,15 @@ class GroupVoiceChat {
                 {urls: 'stun:stun2.l.google.com:19302'},
 
                 // TURN серверы (РЕШАЮТ ПРОБЛЕМУ!)
+                {
+                    urls: [
+                        "turn:dim5x.duckdns.org:3478?transport=udp", // 1. Попробуем UDP
+                        "turn:dim5x.duckdns.org:3478?transport=tcp", // 2. Если UDP не сработал — попробуем TCP
+                        "turn:dim5x.duckdns.org:5349?transport=tcp"  // 3. Если и TCP не сработал — попробуем TLS (порт 5349)
+                    ],
+                    username: "morzh",
+                    credential: "penis_morzha"
+                }
                 // {
                 //     urls: 'turn:94.183.234.220:3478',
                 //     username: 'morzh',
