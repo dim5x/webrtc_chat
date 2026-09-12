@@ -1,398 +1,185 @@
-import asyncio
 import json
 import os
 import uuid
+from pathlib import Path
 
-from aiohttp import web, WSMsgType
+from aiohttp import WSMsgType, web
 
 
-class WebRTCServer:
+BASE_DIR = Path(__file__).resolve().parent
+MAX_MESSAGE_SIZE = 2 * 1024 * 1024
+MAX_TEXT_LENGTH = 4_000
+MAX_FILE_DATA_LENGTH = 1_400_000
+MAX_ROOM_SIZE = 6
+
+
+class SignalingHub:
     def __init__(self):
         self.rooms = {}
         self.peer_rooms = {}
         self.connections = {}
 
-    # В класс WebRTCServer добавить:
-    async def handle_signaling_data(self, data, peer_id):
-        if data['type'] == 'text_message':
-            room_id = self.peer_rooms.get(peer_id)
-            if room_id:
-                # Отправляем сообщение всем в комнате
-                for member_id in self.rooms[room_id]:
-                    if member_id != peer_id and member_id in self.connections:
-                        await self.connections[member_id].send_json({
-                            'type': 'text_message',
-                            'message': data['message'],
-                            'from_peer': peer_id,
-                            'timestamp': data.get('timestamp')
-                        })
+    async def join(self, room_id, ws):
+        room_id = room_id.strip()[:64] or uuid.uuid4().hex[:8]
+        members = self.rooms.setdefault(room_id, set())
+        if len(members) >= MAX_ROOM_SIZE:
+            await ws.send_json({"type": "error", "message": "Room is full (max 6 users)"})
+            return None
 
-
-    async def websocket_handler(self, request):
-        # Обработка CORS preflight запросов
-        if request.method == 'OPTIONS':
-            return web.Response(
-                status=200,
-                headers={
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                    'Access-Control-Max-Age': '86400',
-                    # 'Accept-Encoding': 'gzip, deflate, br, zstd',
-
-                }
-            )
-
-        # Проверяем upgrade header для WebSocket
-        if 'upgrade' not in request.headers.get('connection', '').lower():
-            return web.Response(status=400, text="WebSocket upgrade required")
-
-        if request.headers.get('upgrade', '').lower() != 'websocket':
-            return web.Response(status=400, text="WebSocket upgrade required")
-
-        # Создаем WebSocket response с CORS headers
-        ws = web.WebSocketResponse()
-        ws.headers.update({
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Credentials': 'true'
-        })
-
-        try:
-            await ws.prepare(request)
-        except Exception as e:
-            print(f"WebSocket preparation failed: {e}")
-            return web.Response(status=500, text="WebSocket handshake failed")
-
-        peer_id = None
-        room_id = None
-
-        try:
-            # Логируем новое подключение
-            print(f"New WebSocket connection from {request.remote}")
-
-            async for msg in ws:
-                if msg.type == WSMsgType.TEXT:
-                    try:
-                        data = json.loads(msg.data)
-                        print(f"Received message: {data}")
-
-                        if data['type'] == 'join':
-                            peer_id = data['peer_id']
-                            room_id = data.get('room_id', '100')
-
-                            if not room_id:
-                                room_id = str(uuid.uuid4())[:8]
-
-                            await self.handle_join(peer_id, room_id, ws)
-
-                        elif data['type'] == 'offer':
-                            await self.handle_offer(peer_id, data)
-
-                        elif data['type'] == 'answer':
-                            await self.handle_answer(peer_id, data)
-
-                        elif data['type'] == 'ice-candidate':
-                            await self.handle_ice_candidate(peer_id, data)
-
-                        elif data['type'] == 'text_message':
-                            await self.handle_text_message(peer_id, data)
-
-                        elif data['type'] == 'leave':
-                            await self.handle_disconnect(peer_id, room_id)
-
-                        elif data['type'] == 'file_message':
-                            await self.handle_file_message(peer_id, data)
-                        else:
-                            print(f"Unknown message type: {data['type']}")
-                            await ws.send_json({
-                                'type': 'error',
-                                'message': f'Unknown message type: {data["type"]}'
-                            })
-
-                    except json.JSONDecodeError as e:
-                        print(f"JSON decode error: {e}")
-                        await ws.send_json({
-                            'type': 'error',
-                            'message': 'Invalid JSON format'
-                        })
-                    except KeyError as e:
-                        print(f"Missing key in data: {e}")
-                        await ws.send_json({
-                            'type': 'error',
-                            'message': f'Missing required field: {e}'
-                        })
-
-                elif msg.type == WSMsgType.ERROR:
-                    print(f"WebSocket error: {ws.exception()}")
-
-        except Exception as e:
-            print(f"WebSocket error: {e}")
-        finally:
-            print(f"WebSocket connection closed for peer {peer_id}")
-            await self.handle_disconnect(peer_id, room_id)
-
-        return ws
-
-    async def handle_file_message(self, peer_id, data):
-        room_id = self.peer_rooms.get(peer_id)
-        if not room_id or room_id not in self.rooms:
-            return
-
-        # Отправляем файл всем в комнате
-        for member_id in self.rooms[room_id]:
-            if member_id in self.connections:
-                await self.connections[member_id].send_json({
-                    'type': 'file_message',
-                    'file_name': data['file_name'],
-                    'file_type': data['file_type'],
-                    'file_size': data['file_size'],
-                    'file_data': data['file_data'],
-                    'from_peer': peer_id,
-                    'timestamp': data.get('timestamp', '')
-                })
-
-    async def handle_join(self, peer_id, room_id, ws):
-        if room_id in self.rooms and len(self.rooms[room_id]) >= 6:
-            await ws.send_json({
-                'type': 'error',
-                'message': 'Room is full (max 6 users)'
-            })
-            return
-
+        peer_id = uuid.uuid4().hex
         self.connections[peer_id] = ws
         self.peer_rooms[peer_id] = room_id
-
-        if room_id not in self.rooms:
-            self.rooms[room_id] = []
-
-        self.rooms[room_id].append(peer_id)
-
-        # Отправляем новому участнику список всех в комнате
+        members.add(peer_id)
         await ws.send_json({
-            'type': 'room_joined',
-            'room_id': room_id,
-            'peers': [p for p in self.rooms[room_id] if p != peer_id]
+            "type": "room_joined",
+            "peer_id": peer_id,
+            "room_id": room_id,
+            "peers": [member for member in members if member != peer_id],
         })
-
-        # Отправляем всем в комнате обновленный список участников
         await self.broadcast_peer_list(room_id)
+        return peer_id
 
-        print(f"Peer {peer_id} joined room {room_id}. Peers: {self.rooms[room_id]}")
-
-    async def handle_offer(self, peer_id, data):
-        target_peer = data['target_peer']
-        if (target_peer in self.connections and
-                self.peer_rooms.get(peer_id) == self.peer_rooms.get(target_peer)):
-            await self.connections[target_peer].send_json({
-                'type': 'offer',
-                'offer': data['offer'],
-                'from_peer': peer_id
-            })
-
-    async def handle_answer(self, peer_id, data):
-        target_peer = data['target_peer']
-        if (target_peer in self.connections and
-                self.peer_rooms.get(peer_id) == self.peer_rooms.get(target_peer)):
-            await self.connections[target_peer].send_json({
-                'type': 'answer',
-                'answer': data['answer'],
-                'from_peer': peer_id
-            })
-
-    async def handle_ice_candidate(self, peer_id, data):
-        target_peer = data['target_peer']
-        if (target_peer in self.connections and
-                self.peer_rooms.get(peer_id) == self.peer_rooms.get(target_peer)):
-            await self.connections[target_peer].send_json({
-                'type': 'ice-candidate',
-                'candidate': data['candidate'],
-                'from_peer': peer_id
-            })
-
-    async def handle_text_message(self, peer_id, data):
-        room_id = self.peer_rooms.get(peer_id)
-        if not room_id or room_id not in self.rooms:
+    async def disconnect(self, peer_id):
+        if not peer_id:
             return
 
-        # Отправляем сообщение всем в комнате (включая отправителя)
-        for member_id in self.rooms[room_id]:
-            if member_id in self.connections:
-                await self.connections[member_id].send_json({
-                    'type': 'text_message',
-                    'message': data['message'],
-                    'from_peer': peer_id,
-                    'timestamp': data.get('timestamp', '')
-                })
+        self.connections.pop(peer_id, None)
+        room_id = self.peer_rooms.pop(peer_id, None)
+        if not room_id:
+            return
 
-    async def handle_disconnect(self, peer_id, room_id=None):
-        print('************************************************')
-        if not room_id and peer_id in self.peer_rooms:
-            room_id = self.peer_rooms[peer_id]
+        members = self.rooms.get(room_id)
+        if not members:
+            return
 
-        if peer_id in self.connections:
-            del self.connections[peer_id]
-
-        if peer_id in self.peer_rooms:
-            if not room_id:
-                room_id = self.peer_rooms[peer_id]
-            del self.peer_rooms[peer_id]
-
-            if room_id in self.rooms and peer_id in self.rooms[room_id]:
-                self.rooms[room_id].remove(peer_id)
-
-                # Отправляем всем оставшимся обновленный список
-                await self.broadcast_peer_list(room_id)
-
-                if not self.rooms[room_id]:
-                    del self.rooms[room_id]
-
-            print(f'Peer "{peer_id}" disconnected from room "{room_id}"')
-
-    # От гпт
-    # async def handle_disconnect(self, peer_id, room_id=None):
-    #     print('*************************************')
-    #     # Определяем room_id, если оно не передано
-    #     room_id = room_id or self.peer_rooms.get(peer_id)
-    #
-    #     # Удаляем соединение, если оно существует
-    #     connection = self.connections.pop(peer_id, None)
-    #     if connection:
-    #         print(f'Connection for peer "{peer_id}" removed.')
-    #
-    #     # Проверяем, есть ли peer_id в peer_rooms
-    #     if peer_id in self.peer_rooms:
-    #         room_id = room_id or self.peer_rooms[peer_id]
-    #         del self.peer_rooms[peer_id]
-    #
-    #         # Проверяем, есть ли peer_id в комнате
-    #         if room_id in self.rooms and peer_id in self.rooms[room_id]:
-    #             self.rooms[room_id].remove(peer_id)
-    #             await self.broadcast_peer_list(room_id)
-    #
-    #             # Удаляем комнату, если она пуста
-    #             if not self.rooms[room_id]:
-    #                 del self.rooms[room_id]
-    #                 print(f"Room {room_id} is now empty and has been removed.")
-    #
-    #         print(f"Peer {peer_id} disconnected from room {room_id}.")
-    #     else:
-    #         print(f"Peer {peer_id} not found in peer_rooms.")
+        members.discard(peer_id)
+        if members:
+            await self.broadcast_peer_list(room_id)
+        else:
+            del self.rooms[room_id]
 
     async def broadcast_peer_list(self, room_id):
-        """Отправляет всем в комнате текущий список участников"""
-        if room_id not in self.rooms:
+        members = self.rooms.get(room_id, set())
+        message = {"type": "peer_list_update", "peers": list(members)}
+        for peer_id in tuple(members):
+            ws = self.connections.get(peer_id)
+            if ws and not ws.closed:
+                await ws.send_json(message)
+
+    async def relay(self, peer_id, data):
+        message_type = data.get("type")
+        room_id = self.peer_rooms.get(peer_id)
+        if not room_id:
             return
 
-        for member_id in self.rooms[room_id]:
-            if member_id in self.connections:
-                await self.connections[member_id].send_json({
-                    'type': 'peer_list_update',
-                    'peers': self.rooms[room_id]  # Отправляем весь список включая себя
-                })
+        if message_type in {"offer", "answer", "ice-candidate"}:
+            target_id = data.get("target_peer")
+            if target_id not in self.rooms.get(room_id, set()):
+                return
+            field = {"offer": "offer", "answer": "answer", "ice-candidate": "candidate"}[message_type]
+            if field not in data:
+                return
+            target = self.connections.get(target_id)
+            if target and not target.closed:
+                await target.send_json({"type": message_type, field: data[field], "from_peer": peer_id})
+            return
+
+        if message_type == "text_message":
+            message = data.get("message")
+            if not isinstance(message, str) or not message or len(message) > MAX_TEXT_LENGTH:
+                return
+            await self.broadcast(room_id, {
+                "type": "text_message",
+                "message": message,
+                "from_peer": peer_id,
+                "timestamp": data.get("timestamp", ""),
+            })
+            return
+
+        if message_type == "file_message":
+            required = ("file_name", "file_type", "file_size", "file_data")
+            if any(field not in data for field in required):
+                return
+            if (not isinstance(data["file_name"], str) or not isinstance(data["file_type"], str)
+                    or not isinstance(data["file_data"], str) or len(data["file_data"]) > MAX_FILE_DATA_LENGTH):
+                return
+            await self.broadcast(room_id, {
+                "type": "file_message",
+                "file_name": data["file_name"][:255],
+                "file_type": data["file_type"][:100],
+                "file_size": data["file_size"],
+                "file_data": data["file_data"],
+                "from_peer": peer_id,
+                "timestamp": data.get("timestamp", ""),
+            }, exclude=peer_id)
+
+    async def broadcast(self, room_id, message, exclude=None):
+        for member_id in tuple(self.rooms.get(room_id, set())):
+            if member_id == exclude:
+                continue
+            ws = self.connections.get(member_id)
+            if ws and not ws.closed:
+                await ws.send_json(message)
 
 
-# Простой обработчик для главной страницы
-async def index_handler(request):
-    # Читаем файл index.html и отправляем его
+async def websocket_handler(request):
+    hub = request.app["hub"]
+    ws = web.WebSocketResponse(max_msg_size=MAX_MESSAGE_SIZE)
+    await ws.prepare(request)
+    peer_id = None
+
     try:
-        with open('index.html', 'r', encoding='utf-8') as f:
-            content = f.read()
-        return web.Response(text=content, content_type='text/html')
-    except FileNotFoundError:
-        return web.Response(text='<h1>File index.html not found</h1>', content_type='text/html')
+        async for msg in ws:
+            if msg.type == WSMsgType.ERROR:
+                break
+            if msg.type != WSMsgType.TEXT:
+                continue
+            try:
+                data = json.loads(msg.data)
+            except json.JSONDecodeError:
+                await ws.send_json({"type": "error", "message": "Invalid JSON format"})
+                continue
+            if not isinstance(data, dict):
+                await ws.send_json({"type": "error", "message": "Message must be an object"})
+                continue
 
-# Обработчик для JS файлов.
-async def js_handler(request):
-    try:
-        with open('static/js/client.js', 'r', encoding='utf-8') as f:
-            content = f.read()
-        return web.Response(text=content, content_type='application/javascript')
-    except FileNotFoundError:
-        return web.Response(text='// File not found', content_type='application/javascript', status=404)
-    except Exception as e:
-        print(f"Error serving JS: {e}")
-        return web.Response(text='// Server error', content_type='application/javascript', status=500)
+            if data.get("type") == "join":
+                if peer_id:
+                    await ws.send_json({"type": "error", "message": "Already joined a room"})
+                    continue
+                room_id = data.get("room_id", "")
+                if not isinstance(room_id, str):
+                    await ws.send_json({"type": "error", "message": "Invalid room ID"})
+                    continue
+                peer_id = await hub.join(room_id, ws)
+            elif data.get("type") == "leave":
+                await hub.disconnect(peer_id)
+                peer_id = None
+            else:
+                await hub.relay(peer_id, data)
+    finally:
+        await hub.disconnect(peer_id)
+
+    return ws
 
 
-# Обработчик для CSS файлов.
-async def css_handler(request):
-    name = request.path[1:]  # убираем ведущий слэш в "/static/css/style.css".
-    try:
-        with open(name, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return web.Response(text=content, content_type='text/css')
-
-    except FileNotFoundError:
-        return web.Response(text='/* CSS file not found */', content_type='text/css', status=404)
-    except Exception as e:
-        print(f"Error serving CSS: {e}")
-        return web.Response(text='/* Server error */', content_type='text/css', status=500)
-
-
-async def font_handler(request):
-    # if file_path is None:
-    file_path = request.path[1:]
-    return web.FileResponse(path=file_path)
-
-async def health_handler(request):
+async def health_handler(_request):
     return web.json_response({"status": "ok"})
 
-async def main():
-    server = WebRTCServer()
+
+async def index_handler(_request):
+    return web.FileResponse(BASE_DIR / "index.html")
+
+
+def create_app():
     app = web.Application()
-    app.router.add_get('/health', health_handler)
-    # Добавляем CORS middleware
-    async def cors_middleware(app, handler):
-        async def middleware_handler(request):
-            # Preflight requests
-            if request.method == 'OPTIONS':
-                return web.Response(
-                    status=200,
-                    headers={
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type',
-                        'Access-Control-Max-Age': '86400',
-                        # 'Accept-Encoding': 'gzip, deflate, br, zstd',
-                    }
-                )
-
-            response = await handler(request)
-            response.headers.update({
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-            })
-            return response
-
-        return middleware_handler
-
-    app.middlewares.append(cors_middleware)
-
-    # Добавляем маршруты
-    app.router.add_get('/', index_handler)
-    # app.router.add_get('/', font_handler(request,file_path='index.html'))
-    app.router.add_get('/ws', server.websocket_handler)
-
-    app.router.add_get('/static/js/client.js', js_handler)
-    app.router.add_get('/static/css/style.css', css_handler)
-    app.router.add_get('/static/css/fontello.css', css_handler)
-    app.router.add_get('/static/fonts/fontello.woff2', font_handler)
-    app.router.add_get('/static/img/scam.png', font_handler)
-    app.router.add_options('/ws', lambda request: web.Response(status=200))  # для CORS
-
-    runner = web.AppRunner(app)
-    await runner.setup()
-
-    port = int(os.environ.get('PORT', 8080))
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
-
-    print(f"Server started on port {port}")
-    print(f"WebSocket available at: ws://localhost:{port}/ws")
-
-    await asyncio.Future()
+    app["hub"] = SignalingHub()
+    app.router.add_get("/", index_handler)
+    app.router.add_get("/health", health_handler)
+    app.router.add_get("/ws", websocket_handler)
+    app.router.add_static("/static/", BASE_DIR / "static")
+    return app
 
 
-if __name__ == '__main__':
-    asyncio.run(main())
+if __name__ == "__main__":
+    web.run_app(create_app(), host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
