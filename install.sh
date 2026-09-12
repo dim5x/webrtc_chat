@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/dim5x/webrtc_chat.git"
+TARBALL_URL="https://github.com/dim5x/webrtc_chat/archive/refs/heads/master.tar.gz"
 INSTALL_DIR="${INSTALL_DIR:-/opt/webrtc_chat}"
 APP_PORT="${APP_PORT:-8080}"
 IMAGE_NAME="webrtc-chat"
@@ -10,23 +10,26 @@ CONTAINER_NAME="webrtc-chat"
 
 [[ $EUID -eq 0 ]] || { echo "Запустите от root (sudo)"; exit 1; }
 
-# --- Docker ---
+# --- Docker + curl + tar ---
 if ! command -v docker >/dev/null 2>&1; then
     echo "[*] Устанавливаю Docker..."
     apt-get update -qq
-    apt-get install -y -qq docker.io git
+    apt-get install -y -qq docker.io curl tar
     systemctl enable --now docker
 fi
 
-# --- Клон / pull ---
-if [[ -d "${INSTALL_DIR}/.git" ]]; then
-    echo "[*] Обновляю ${INSTALL_DIR}..."
-    git -C "${INSTALL_DIR}" pull --ff-only
-else
-    echo "[*] Клонирую репозиторий..."
-    rm -rf "${INSTALL_DIR}"
-    git clone --depth=1 "${REPO_URL}" "${INSTALL_DIR}"
-fi
+# --- Скачивание и распаковка ---
+echo "[*] Скачиваю ${TARBALL_URL}..."
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+curl -fsSL "${TARBALL_URL}" -o "${TMP_DIR}/src.tar.gz"
+
+echo "[*] Распаковываю в ${INSTALL_DIR}..."
+rm -rf "${INSTALL_DIR}"
+mkdir -p "${INSTALL_DIR}"
+# В архиве GitHub корневая папка вида webrtc_chat-master/, --strip-components=1 её убирает
+tar -xzf "${TMP_DIR}/src.tar.gz" -C "${INSTALL_DIR}" --strip-components=1
 
 cd "${INSTALL_DIR}"
 
