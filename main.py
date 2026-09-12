@@ -12,7 +12,6 @@ MAX_MESSAGE_SIZE = 2 * 1024 * 1024
 MAX_TEXT_LENGTH = 4_000
 MAX_FILE_DATA_LENGTH = 1_400_000
 MAX_ROOM_SIZE = 6
-PEER_ID_PATTERN = re.compile(r"[A-Za-zА-Яа-яЁё -]{1,64}")
 
 
 class SignalingHub:
@@ -21,19 +20,14 @@ class SignalingHub:
         self.peer_rooms = {}
         self.connections = {}
 
-    async def join(self, room_id, peer_id, ws):
+    async def join(self, room_id, ws):
         room_id = room_id.strip()[:64] or uuid.uuid4().hex[:8]
-        if not PEER_ID_PATTERN.fullmatch(peer_id):
-            await ws.send_json({"type": "error", "message": "Invalid peer name"})
-            return None
-        if peer_id in self.connections:
-            await ws.send_json({"type": "error", "message": "Peer name is already in use"})
-            return None
         members = self.rooms.setdefault(room_id, set())
         if len(members) >= MAX_ROOM_SIZE:
             await ws.send_json({"type": "error", "message": "Room is full (max 6 users)"})
             return None
 
+        peer_id = uuid.uuid4().hex
         self.connections[peer_id] = ws
         self.peer_rooms[peer_id] = room_id
         members.add(peer_id)
@@ -155,11 +149,10 @@ async def websocket_handler(request):
                     await ws.send_json({"type": "error", "message": "Already joined a room"})
                     continue
                 room_id = data.get("room_id", "")
-                requested_peer_id = data.get("peer_id")
-                if not isinstance(room_id, str) or not isinstance(requested_peer_id, str):
-                    await ws.send_json({"type": "error", "message": "Invalid room ID or peer name"})
+                if not isinstance(room_id, str):
+                    await ws.send_json({"type": "error", "message": "Invalid room ID"})
                     continue
-                peer_id = await hub.join(room_id, requested_peer_id, ws)
+                peer_id = await hub.join(room_id, ws)
             elif data.get("type") == "leave":
                 await hub.disconnect(peer_id)
                 peer_id = None
