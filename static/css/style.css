@@ -738,10 +738,131 @@ body {
 
 /* Адаптация для мобильных */
 @media (max-width: 768px) {
+    body {
+        height: auto;
+        min-height: 100dvh;
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        overflow: auto;
+    }
+
+    .channels-sidebar,
+    .room-info {
+        width: 100%;
+        padding: 0;
+    }
+
+    .channels-sidebar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        background: #2f3136;
+    }
+
+    .server-header,
+    .technical-section {
+        grid-column: 1 / -1;
+    }
+
+    .technical-section {
+        padding: 10px 12px;
+        border-radius: 0;
+    }
+
+    .controls-group {
+        display: flex;
+        gap: 8px;
+        margin: 8px 0 0;
+    }
+
+    .control-button {
+        margin: 0;
+        min-height: 44px;
+    }
+
+    .audio-output-container {
+        display: none;
+    }
+
+    .user-controls-section {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        width: auto;
+        height: auto;
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 0;
+    }
+
+    .main-content {
+        min-height: 0;
+    }
+
+    .chat-header {
+        padding: 12px;
+    }
+
+    .chat-messages {
+        padding: 12px;
+    }
+
+    .message {
+        max-width: 92%;
+        margin: 10px 0;
+        padding: 8px 10px;
+    }
+
+    .input-container {
+        padding: 10px;
+        gap: 6px;
+        position: sticky;
+        bottom: 0;
+    }
+
+    .message-input {
+        min-width: 0;
+        min-height: 44px;
+    }
+
+    .send-button,
+    .attach-button {
+        min-height: 44px;
+    }
+
+    .send-button {
+        padding: 12px;
+    }
+
+    .room-info {
+        border-top: 1px solid #202225;
+    }
+
+    .room-header {
+        padding: 10px 12px;
+    }
+
+    .participants-list {
+        display: flex;
+        gap: 8px;
+        padding: 8px 12px;
+        overflow-x: auto;
+    }
+
+    .participant {
+        min-width: 180px;
+        margin: 0;
+        padding: 8px;
+    }
+
+    .volume-control {
+        width: 56px;
+    }
+
     .attach-menu {
-        bottom: 60px;
+        bottom: 72px;
         left: 12px;
         right: 12px;
+        transform: none;
     }
 
     .file-image {
@@ -750,5 +871,24 @@ body {
 
     .attach-option {
         padding: 12px 16px;
+    }
+}
+
+@media (max-width: 380px) {
+    .server-header {
+        display: none;
+    }
+
+    .section-title {
+        margin-bottom: 4px;
+    }
+
+    .room-input {
+        padding: 8px;
+        margin: 4px 0;
+    }
+
+    .user-id {
+        max-width: 140px;
     }
 }
