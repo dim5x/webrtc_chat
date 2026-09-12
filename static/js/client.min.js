@@ -427,6 +427,8 @@ class GroupVoiceChat {
     }
 
     handleRoomJoined(data) {
+        this.peerId = data.peer_id;
+        document.getElementById('myId').textContent = this.peerId;
         this.roomId = data.room_id;
         this.isConnecting = false;
 
