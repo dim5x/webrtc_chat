@@ -22,33 +22,32 @@ fi
 echo "[*] Скачиваю ${TARBALL_URL}..."
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
-
 curl -fsSL "${TARBALL_URL}" -o "${TMP_DIR}/src.tar.gz"
 
 echo "[*] Распаковываю в ${INSTALL_DIR}..."
 rm -rf "${INSTALL_DIR}"
 mkdir -p "${INSTALL_DIR}"
-# В архиве GitHub корневая папка вида webrtc_chat-master/, --strip-components=1 её убирает
 tar -xzf "${TMP_DIR}/src.tar.gz" -C "${INSTALL_DIR}" --strip-components=1
-
 cd "${INSTALL_DIR}"
 
 # --- Патч Dockerfile (healthcheck.py закомментирован в COPY) ---
 sed -i 's|^#COPY healthcheck.py .|COPY healthcheck.py .|' Dockerfile || true
 
-# --- Сборка и запуск ---
+# --- Сборка ---
 echo "[*] Собираю образ..."
 docker build -t "${IMAGE_NAME}:latest" .
 
-echo "[*] Запускаю контейнер..."
+# --- Запуск только на localhost ---
+echo "[*] Запускаю контейнер на 127.0.0.1:${APP_PORT}..."
 docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 docker run -d \
     --name "${CONTAINER_NAME}" \
     --restart unless-stopped \
-    -p "${APP_PORT}:8080" \
+    -p "127.0.0.1:${APP_PORT}:8080" \
     "${IMAGE_NAME}:latest"
 
 echo
-echo "[✓] Готово. Приложение: http://$(hostname -I | awk '{print $1}'):${APP_PORT}"
+echo "[✓] Готово. Приложение слушает 127.0.0.1:${APP_PORT}"
+echo "    Nginx должен проксировать на этот адрес (правки не трогаем)."
 echo "    Логи:    docker logs -f ${CONTAINER_NAME}"
 echo "    Рестарт: docker restart ${CONTAINER_NAME}"
