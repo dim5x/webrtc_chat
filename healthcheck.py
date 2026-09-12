@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
-import asyncio
-import sys
-
-import aiohttp
+import os
+from urllib.request import urlopen
 
 
-async def main():
-    print('lol kek')
-    try:
-        timeout = aiohttp.ClientTimeout(total=5)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get('https://webrtcchat-production.up.railway.app/health') as response:
-                sys.exit(0 if response.status == 200 else 1)
-    except Exception:
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+try:
+    port = os.environ.get("PORT", "8080")
+    with urlopen(f"http://127.0.0.1:{port}/health", timeout=5) as response:
+        raise SystemExit(0 if response.status == 200 else 1)
+except OSError:
+    raise SystemExit(1)

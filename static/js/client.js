@@ -10,6 +10,7 @@ class GroupVoiceChat {
         this.isMuted = false;
         this.isDeafened = false;
         this.isConnecting = false;
+        this.pendingIceCandidates = {};
         // this.audioContext = null;
         // this.analyser = null;
 
@@ -17,7 +18,7 @@ class GroupVoiceChat {
         // this.chatMessages = null; ***************
         // Новые свойства для файлов
         // this.attachMenu = null;
-        this.maxFileSize = 10 * 1024 * 1024; // 10MB лимит
+        this.maxFileSize = 1024 * 1024;
 
         // Привязываем методы к контексту
         // this.handleAttachClick = this.handleAttachClick.bind(this);
@@ -325,11 +326,11 @@ class GroupVoiceChat {
                     }
                 };
 
-                this.ws.onmessage = (event) => {
+                this.ws.onmessage = async (event) => {
                     try {
                         console.log('WebSocket message received:', event.data);
-                        const data = JSON.parse(event.data);
-                        this.handleSignalingData(data);
+                const data = JSON.parse(event.data);
+                await this.handleSignalingData(data);
                     } catch (e) {
                         console.error('Error parsing WebSocket message:', e, event.data);
                     }
@@ -841,7 +842,7 @@ class GroupVoiceChat {
                         <div class="status-online">● Online</div>
                     </div>
                     <div class="volume-control">
-                        <input type="range" min="0" max="100" value="100" 
+                        <input type="range" min="0" max="100" value="100"
                                class="volume-slider" data-peer-id="${peerId}">
                     </div>
                 `;
@@ -919,6 +920,7 @@ class GroupVoiceChat {
             });
 
             await pc.setRemoteDescription(data.offer);
+            await this.addPendingIceCandidates(data.from_peer, pc);
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
@@ -944,8 +946,18 @@ class GroupVoiceChat {
 
     async handleIceCandidate(data) {
         const pc = this.peerConnections[data.from_peer];
-        if (pc) {
-            await pc.addIceCandidate(data.candidate);
+        if (!pc || !pc.remoteDescription) {
+            (this.pendingIceCandidates[data.from_peer] ||= []).push(data.candidate);
+            return;
+        }
+        await pc.addIceCandidate(data.candidate);
+    }
+
+    async addPendingIceCandidates(peerId, pc) {
+        const candidates = this.pendingIceCandidates[peerId] || [];
+        delete this.pendingIceCandidates[peerId];
+        for (const candidate of candidates) {
+            await pc.addIceCandidate(candidate);
         }
     }
 
@@ -1027,6 +1039,7 @@ class GroupVoiceChat {
         });
         this.peerConnections = {};
         this.remoteStreams = {};
+        this.pendingIceCandidates = {};
 
         if (this.localStream) {
             this.localStream.getTracks().forEach(track => track.stop());
@@ -1204,7 +1217,7 @@ class GroupVoiceChat {
             const file = e.target.files[0];
             if (file) {
                 if (file.size > this.maxFileSize) {
-                    alert('Файл слишком большой. Максимум 10MB');
+                    alert('Файл слишком большой. Максимум 1 MB');
                     return;
                 }
 
@@ -1227,7 +1240,7 @@ class GroupVoiceChat {
             const file = e.target.files[0];
             if (file) {
                 if (file.size > this.maxFileSize) {
-                    alert('Файл слишком большой. Максимум 10MB');
+                    alert('Файл слишком большой. Максимум 1 MB');
                     return;
                 }
 
@@ -1320,7 +1333,7 @@ class GroupVoiceChat {
                     <div class="file-size">${this.formatFileSize(file.size)}</div>
                 </div>
             </div>
-            <img src="${dataUrl}" alt="${this.escapeHtml(file.name)}" class="file-image" 
+            <img src="${dataUrl}" alt="${this.escapeHtml(file.name)}" class="file-image"
                  onclick="app.openImage('${dataUrl}')">
         `;
         } else {
