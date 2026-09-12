@@ -4,7 +4,7 @@
 
 Установка: 
 
-```curl -fsSL https://github.com/dim5x/webrtc_chat | sudo bash -s```
+```curl -fsSL https://github.com/dim5x/webrtc_chat/install.sh | sudo bash -s```
 
 
 ![scam (Среднее).png](/static/img/scam%20(Среднее).png)
